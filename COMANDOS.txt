@@ -1,0 +1,22 @@
+CREATE TABLE users (
+    id BIGSERIAL PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    first_name VARCHAR(255),
+    last_name VARCHAR(255),
+    company_id VARCHAR(255) NOT NULL,
+    permission VARCHAR(1)
+); 
+
+INSERT INTO users (username, password, email, first_name, last_name, company_id, permission) VALUES
+('user1', 'password1', 'user1@example.com', 'John', 'Doe', 'company1', '0'),
+('user2', 'password2', 'user2@example.com', 'Jane', 'Smith', 'company1', '1'),
+('user3', 'password3', 'user3@example.com', 'Alice', 'Johnson', 'company2', '2'),
+('user4', 'password4', 'user4@example.com', 'Bob', 'Brown', 'company2', '3'),
+('user5', 'password5', 'user5@example.com', 'Charlie', 'Davis', 'company3', '0'),
+('user6', 'password6', 'user6@example.com', 'David', 'Miller', 'company3', '1'),
+('user7', 'password7', 'user7@example.com', 'Eve', 'Wilson', 'company4', '2'),
+('user8', 'password8', 'user8@example.com', 'Frank', 'Moore', 'company4', '3'),
+('user9', 'password9', 'user9@example.com', 'Grace', 'Taylor', 'company5', '0'),
+('user10', 'password10', 'user10@example.com', 'Hank', 'Anderson', 'company5', '1');
