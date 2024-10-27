@@ -1,6 +1,7 @@
 package com.example.quarkusapi.controller;
 
 import com.example.quarkusapi.model.User;
+import com.example.quarkusapi.filter.ProtectedRoute;
 import com.example.quarkusapi.service.RedisService;
 import com.example.quarkusapi.utils.JwtUtils;
 import jakarta.inject.Inject;
@@ -41,12 +42,24 @@ public class UserResource {
     }
     
     @GET
-    public List<User> listaUsers()
-    {
-        return User.listAll();
+    @ProtectedRoute
+    public Response listaUsers(@QueryParam("page") @DefaultValue("1") int page,
+                               @QueryParam("size") @DefaultValue("10") int size) {
+        if (page < 1 || size < 1) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Page and size must be greater than 0").build();
+        }
+
+        List<User> users = User.findAll().page(page - 1, size).list();
+        long totalUsers = User.count();
+
+        return Response.ok()
+                .header("X-Total-Count", totalUsers)
+                .entity(users)
+                .build();
     }
 
     @POST
+    @ProtectedRoute
     @Transactional
     public Response criarUser(User user)
     {
@@ -56,6 +69,7 @@ public class UserResource {
 
     @GET
     @Path("/{id}")
+    @ProtectedRoute
     public User buscarUser(@PathParam("id") Long id)
     {
         return User.findById(id);

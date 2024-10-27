@@ -1,22 +1,46 @@
+-- Tabela users
 CREATE TABLE users (
-    id BIGSERIAL PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     username VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
-    first_name VARCHAR(255),
-    last_name VARCHAR(255),
-    company_id VARCHAR(255) NOT NULL,
-    permission VARCHAR(1)
-); 
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL
+);
 
-INSERT INTO users (username, password, email, first_name, last_name, company_id, permission) VALUES
-('user1', 'password1', 'user1@example.com', 'John', 'Doe', 'company1', '0'),
-('user2', 'password2', 'user2@example.com', 'Jane', 'Smith', 'company1', '1'),
-('user3', 'password3', 'user3@example.com', 'Alice', 'Johnson', 'company2', '2'),
-('user4', 'password4', 'user4@example.com', 'Bob', 'Brown', 'company2', '3'),
-('user5', 'password5', 'user5@example.com', 'Charlie', 'Davis', 'company3', '0'),
-('user6', 'password6', 'user6@example.com', 'David', 'Miller', 'company3', '1'),
-('user7', 'password7', 'user7@example.com', 'Eve', 'Wilson', 'company4', '2'),
-('user8', 'password8', 'user8@example.com', 'Frank', 'Moore', 'company4', '3'),
-('user9', 'password9', 'user9@example.com', 'Grace', 'Taylor', 'company5', '0'),
-('user10', 'password10', 'user10@example.com', 'Hank', 'Anderson', 'company5', '1');
+-- Tabela companies
+CREATE TABLE companies (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE
+);
+
+-- Tabela user_company
+CREATE TABLE user_company (
+    user_id BIGINT NOT NULL,
+    company_id BIGINT NOT NULL,
+    permission CHAR(1) NOT NULL,
+    PRIMARY KEY (user_id, company_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+);
+
+
+-- Inserir dados na tabela users
+INSERT INTO users (username, password, email, first_name, last_name) VALUES
+('john_doe', 'password123', 'john.doe@example.com', 'John', 'Doe'),
+('jane_smith', 'password456', 'jane.smith@example.com', 'Jane', 'Smith'),
+('alice_jones', 'password789', 'alice.jones@example.com', 'Alice', 'Jones');
+
+-- Inserir dados na tabela companies
+INSERT INTO companies (name) VALUES
+('Company A'),
+('Company B'),
+('Company C');
+
+-- Inserir dados na tabela user_company
+INSERT INTO user_company (user_id, company_id, permission) VALUES
+(1, 1, 'A'), -- John Doe na Company A com permissão 'A'
+(1, 2, 'B'), -- John Doe na Company B com permissão 'B'
+(2, 1, 'C'), -- Jane Smith na Company A com permissão 'C'
+(2, 3, 'A'), -- Jane Smith na Company C com permissão 'A'
+(3, 2, 'B'); -- Alice Jones na Company B com permissão 'B'
