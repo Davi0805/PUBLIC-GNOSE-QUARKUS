@@ -30,7 +30,7 @@ public class UserResource {
         }
         // Aqui você deve validar o usuário e senha
         User foundUser = User.find("username", user.username).firstResult();
-        if (foundUser != null && foundUser.password.equals(user.password)) {
+        if (foundUser != null && foundUser.checkHashPassword(user.password)) {
             String token = jwtUtil.generateToken(user.username);
             redisService.saveToken(user.username, token);
             return Response.ok()
@@ -63,6 +63,7 @@ public class UserResource {
     @Transactional
     public Response criarUser(User user)
     {
+        user.setHashPassword(user.password);
         user.persist();
         return Response.status(Response.Status.CREATED).entity(user).build();
     }

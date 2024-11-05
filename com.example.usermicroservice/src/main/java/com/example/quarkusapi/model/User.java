@@ -7,6 +7,8 @@ import jakarta.persistence.*;
 import java.io.Serializable;
 import java.util.Set;
 
+import org.mindrot.jbcrypt.BCrypt;
+
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 @Entity
@@ -31,4 +33,14 @@ public class User extends PanacheEntity implements Serializable {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     public Set<UserCompany> userCompanies;
+
+    public Void setHashPassword(String password)
+    {
+        this.password = BCrypt.hashpw(password, BCrypt.gensalt());
+    }
+
+    public Boolean checkHashPassword(String password)
+    {
+        return BCrypt.checkpw(password, this.password);
+    }
 }
