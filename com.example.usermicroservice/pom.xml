@@ -61,20 +61,23 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5</artifactId>
-            <scope>test</scope>
+            <artifactId>quarkus-container-image-docker</artifactId>
         </dependency>
         <dependency>
 
-        <groupId>javax.ws.rs</groupId>
+        <groupId>io.quarkus</groupId>
 
-        <artifactId>javax.ws.rs-api</artifactId>
+        <artifactId>quarkus-junit5</artifactId>
 
-        <version>2.1.1</version>
-
-        <scope>provided</scope>
+        <scope>test</scope>
 
     </dependency>
+        <dependency>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>javax.ws.rs-api</artifactId>
+            <version>2.1.1</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>

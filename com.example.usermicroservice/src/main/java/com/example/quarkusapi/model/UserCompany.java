@@ -16,7 +16,7 @@ public class UserCompany extends PanacheEntityBase implements Serializable {
     @ManyToOne
     @MapsId("userId")
     @JoinColumn(name = "user_id")
-    @JsonBackReference
+    @JsonBackReference(value = "user-userCompany")
     public User user;
 
     @ManyToOne

@@ -59,7 +59,7 @@ public class UserResource {
     }
 
     @POST
-    @ProtectedRoute
+    /* @ProtectedRoute */
     @Transactional
     public Response criarUser(User user)
     {

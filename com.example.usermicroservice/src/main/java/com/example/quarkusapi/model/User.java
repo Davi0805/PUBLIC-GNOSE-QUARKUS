@@ -1,8 +1,6 @@
 package com.example.quarkusapi.model;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
-import jakarta.persistence.Table;
-
 import jakarta.persistence.*;
 import java.io.Serializable;
 import java.util.Set;
@@ -31,12 +29,13 @@ public class User extends PanacheEntity implements Serializable {
     public String last_name;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
+    @JsonManagedReference(value = "user-userCompany")
     public Set<UserCompany> userCompanies;
 
     public Void setHashPassword(String password)
     {
         this.password = BCrypt.hashpw(password, BCrypt.gensalt());
+        return null;
     }
 
     public Boolean checkHashPassword(String password)
