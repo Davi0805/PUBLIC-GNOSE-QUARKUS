@@ -28,7 +28,7 @@ public class UserResource {
         if (user == null || user.username == null || user.password == null) {
             return Response.status(Response.Status.BAD_REQUEST).entity("Username and password must be provided").build();
         }
-        // Aqui você deve validar o usuário e senha
+        //validar o usuário e senha
         User foundUser = User.find("username", user.username).firstResult();
         if (foundUser != null && foundUser.checkHashPassword(user.password)) {
             String token = jwtUtil.generateToken(user.username);
