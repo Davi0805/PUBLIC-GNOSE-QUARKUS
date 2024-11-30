@@ -1,6 +1,7 @@
 package com.example.quarkusapi.controller;
 
 import com.example.quarkusapi.model.User;
+import com.example.quarkusapi.model.UserLogin;
 import com.example.quarkusapi.filter.ProtectedRoute;
 import com.example.quarkusapi.service.RedisService;
 import com.example.quarkusapi.utils.JwtUtils;
@@ -24,12 +25,12 @@ public class UserResource {
 
     @POST
     @Path("/login")
-    public Response login(User user) {
+    public Response login(UserLogin user) {
         if (user == null || user.username == null || user.password == null) {
             return Response.status(Response.Status.BAD_REQUEST).entity("Username and password must be provided").build();
         }
         //validar o usuário e senha
-        User foundUser = User.find("username", user.username).firstResult();
+        UserLogin foundUser = UserLogin.find("username", user.username).firstResult();
         if (foundUser != null && foundUser.checkHashPassword(user.password)) {
             String token = jwtUtil.generateToken(user.username);
             redisService.saveToken(user.username, token);
@@ -63,6 +64,10 @@ public class UserResource {
     @Transactional
     public Response criarUser(User user)
     {
+        User existingUser  = User.find("username", user.username).firstResult();
+        if (existingUser  != null) {
+            return Response.status(Response.Status.CONFLICT).entity("Usuario ja existe").build();
+        }
         user.setHashPassword(user.password);
         user.persist();
         return Response.status(Response.Status.CREATED).entity(user).build();
