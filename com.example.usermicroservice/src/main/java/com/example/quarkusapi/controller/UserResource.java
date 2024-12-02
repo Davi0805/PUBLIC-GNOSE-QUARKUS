@@ -27,13 +27,14 @@ public class UserResource {
     @Path("/login")
     public Response login(UserLogin user) {
         if (user == null || user.username == null || user.password == null) {
-            return Response.status(Response.Status.BAD_REQUEST).entity("Username and password must be provided").build();
+            return Response.status(Response.Status.BAD_REQUEST).entity("Usuario e senha nao fornecido").build();
         }
         //validar o usuário e senha
         UserLogin foundUser = UserLogin.find("username", user.username).firstResult();
         if (foundUser != null && foundUser.checkHashPassword(user.password)) {
             String token = jwtUtil.generateToken(user.username);
-            redisService.saveToken(user.username, token);
+            if ((redisService.saveToken(user.username, token)) == false)
+                return Response.status(Response.Status.BAD_REQUEST).entity("Falha ao salvar token no redis").build();
             return Response.ok()
                 .header("Authorization", "Bearer " + token)
                 .entity("{\"token\":\"" + token + "\"}")
@@ -47,7 +48,7 @@ public class UserResource {
     public Response listaUsers(@QueryParam("page") @DefaultValue("1") int page,
                                @QueryParam("size") @DefaultValue("10") int size) {
         if (page < 1 || size < 1) {
-            return Response.status(Response.Status.BAD_REQUEST).entity("Page and size must be greater than 0").build();
+            return Response.status(Response.Status.BAD_REQUEST).entity("Pagina ou tamanho muito pequeno").build();
         }
 
         List<User> users = User.findAll().page(page - 1, size).list();

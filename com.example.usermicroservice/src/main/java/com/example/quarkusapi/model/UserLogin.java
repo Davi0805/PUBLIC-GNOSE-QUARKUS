@@ -12,10 +12,10 @@ import org.mindrot.jbcrypt.BCrypt;
 public class UserLogin extends PanacheEntity implements Serializable
 {
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     public String username;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     public String password;
 
     public Boolean checkHashPassword(String password)

@@ -14,19 +14,19 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 public class User extends PanacheEntity implements Serializable
 {
     
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 50)
     public String username;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     public String password;
 
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false, length = 180)
     public String email;
     
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     public String first_name;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     public String last_name;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -37,10 +37,5 @@ public class User extends PanacheEntity implements Serializable
     {
         this.password = BCrypt.hashpw(password, BCrypt.gensalt());
         return null;
-    }
-
-    public Boolean checkHashPassword(String password)
-    {
-        return BCrypt.checkpw(password, this.password);
     }
 }
