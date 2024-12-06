@@ -35,7 +35,11 @@ public class UserResource {
             String token = jwtUtil.generateToken(user.username);
             if ((redisService.saveToken(user.username, token)) == false)
                 return Response.status(Response.Status.BAD_REQUEST).entity("Falha ao salvar token no redis").build();
-            return Response.ok()
+            /* return Response.ok()
+                .header("Authorization", "Bearer " + token)
+                .entity("{\"token\":\"" + token + "\"}")
+                .build(); */
+                return Response.ok()
                 .header("Authorization", "Bearer " + token)
                 .entity("{\"token\":\"" + token + "\"}")
                 .build();
