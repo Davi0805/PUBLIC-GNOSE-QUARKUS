@@ -9,6 +9,8 @@ import org.mindrot.jbcrypt.BCrypt;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
+// ! ADICIONAR BOOL TERMOS E CONDICOES E BOOL PENDING (JA LIGADO A UMA EMPRESA)
+
 @Entity
 @Table(name = "users")
 public class User extends PanacheEntity implements Serializable
@@ -37,5 +39,16 @@ public class User extends PanacheEntity implements Serializable
     {
         this.password = BCrypt.hashpw(password, BCrypt.gensalt());
         return null;
+    }
+
+    public User fill_User(newEmployee req)
+    {
+        this.username = req.getUsername();
+        setHashPassword(req.getPassword());
+        this.email = req.getEmail();
+        this.first_name = req.getFirst_name();
+        this.last_name = req.getLast_name();
+        
+        return this;
     }
 }

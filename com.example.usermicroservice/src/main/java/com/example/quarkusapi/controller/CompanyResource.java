@@ -3,6 +3,7 @@ package com.example.quarkusapi.controller;
 import com.example.quarkusapi.model.User;
 import com.example.quarkusapi.model.Company;
 import com.example.quarkusapi.model.UserCompany;
+import com.example.quarkusapi.model.newEmployee;
 import com.example.quarkusapi.filter.ProtectedRoute;
 import com.example.quarkusapi.service.RedisService;
 import com.example.quarkusapi.utils.JwtUtils;
@@ -13,15 +14,14 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 
+import jakarta.validation.Valid;
+
 
 @Path("/company")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class CompanyResource
 {
-    @Inject 
-    RedisService redisService;
-
     @POST
     @Transactional
     public Response criar_empresa(Company req)
@@ -33,6 +33,14 @@ public class CompanyResource
             .entity("Preencha devidamente todos os campos")
             .build();
         }
+        Company existing_company = Company.find("company_name", req.company_name).firstResult();
+        if (existing_company != null)
+        {
+            existing_company = null; // ! Equivalente de delete em java
+            return Response.status(Response.Status.OK)
+                            .entity("Empresa ja existe")
+                            .build();
+        }
         req.persist();
         return Response
         .status(Response.Status.OK)
@@ -40,6 +48,74 @@ public class CompanyResource
         .build();
     }
 
+
+    // ? PARA CRIAR USER E ADICIONAR DIRETO EM UMA EMPRESA
+    @POST
+    @Path("/criar_func")
+    @Transactional
+    public Response criar_employee(@Valid newEmployee req)
+    {
+        if (req == null)
+        {
+            return Response
+                    .status(Response.Status.BAD_REQUEST)
+                    .entity("Preencha todos os campos!")
+                    .build();
+        }
+        User existingUser = User.find("username", req.getUsername()).firstResult();
+        Company existingCompany = Company.find("id", req.getCompany_id()).firstResult();
+        if (existingUser != null)
+        {    
+            existingUser = null; // ! Equivalente de delete em java
+            return Response
+            .status(Response.Status.CONFLICT)
+            .entity("Usuario ja existe!")
+            .build();
+        }
+        if (existingCompany == null)
+            return Response
+            .status(Response.Status.CONFLICT)
+            .entity("Empresa nao existe!").
+            build();
+        
+        User user_transc = new User().fill_User(req);
+        user_transc.persist();
+
+        UserCompany relation = new UserCompany();
+        relation.user = user_transc;
+        relation.company = existingCompany;
+        relation.permission = req.getCompany_permission();
+
+        relation.persist();
+
+        return Response
+                    .status(Response.Status.OK)
+                    .entity("Usuario criado com sucesso!")
+                    .build();
+    }
+
+    // TODO: CHECAR SE O CLIENTE ESTA PESQUISANDO OS FUNCS DE UMA EMPRESA QUE ELE FAZ PARTE
+    // TODO: E SE TEM PERMISSAO PARA TAL ACAO
+    @GET
+    @Path("/list_funcs")
+    public Response list_company_funcs(@QueryParam("page") @DefaultValue("1") int page,
+    @QueryParam("size") @DefaultValue("10") int size,
+     @QueryParam("company") long company_id)
+    {
+        List<User> req = UserCompany.findUsersByCompanyId(company_id);
+        if (req == null || req.isEmpty())
+            return Response
+                    .status(Response.Status.BAD_REQUEST)
+                    .entity("Empresa nao existe!")
+                    .build();
+        return Response
+                .status(Response.Status.OK)
+                .entity(req)
+                .build();
+    }
+
+
+    // ? PARA ADICIONAR USUARIO EXISTENTE EM UMA EMPRESA
     @POST
     @Path("/add_func")
     @Transactional
@@ -62,7 +138,6 @@ public class CompanyResource
                 .build();
         }
         
-        // Validate permission field
         if (req.permission == null || req.permission.isEmpty()) {
             return Response
                 .status(Response.Status.BAD_REQUEST)
@@ -70,7 +145,6 @@ public class CompanyResource
                 .build();
         }
         
-        // Set relationships explicitly
         req.user = user;
         req.company = company;
         
@@ -80,5 +154,4 @@ public class CompanyResource
             .entity(req)
             .build();
     }
-
 }
