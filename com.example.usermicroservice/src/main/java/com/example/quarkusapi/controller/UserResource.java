@@ -85,4 +85,25 @@ public class UserResource {
     {
         return User.findById(id);
     }
+
+    @DELETE
+    @Path("/{id}")
+    @Transactional
+    public Response delete_user(@PathParam("id") Long id)
+    {
+        User foundUser = User.findById(id);
+        
+        if (foundUser == null) {
+            return Response
+                .status(Response.Status.NOT_FOUND)
+                .entity("User not found!")
+                .build();
+        }
+        
+        foundUser.delete();
+        
+        return Response
+            .status(Response.Status.NO_CONTENT)
+            .build();
+    }
 }
