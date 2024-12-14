@@ -41,6 +41,10 @@ public class User extends PanacheEntity implements Serializable
         return null;
     }
 
+    public boolean checkHashPassword(String passwordToCheck) {
+        return BCrypt.checkpw(passwordToCheck, this.password);
+    }
+
     public User fill_User(newEmployee req)
     {
         this.username = req.getUsername();

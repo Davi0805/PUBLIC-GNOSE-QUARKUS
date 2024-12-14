@@ -14,6 +14,8 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 
+import org.jboss.logging.Logger;
+
 import jakarta.validation.Valid;
 
 
@@ -22,6 +24,11 @@ import jakarta.validation.Valid;
 @Consumes(MediaType.APPLICATION_JSON)
 public class CompanyResource
 {
+    private static final Logger LOG = Logger.getLogger(CompanyResource.class);
+
+    @Inject
+    RedisService redisService;
+
     @POST
     @Transactional
     public Response criar_empresa(Company req)
@@ -119,8 +126,15 @@ public class CompanyResource
     @POST
     @Path("/add_func")
     @Transactional
-    public Response add_employee(UserCompany req)
+    public Response add_employee(@CookieParam("AUTH_TOKEN") String token, UserCompany req)
     {
+        List<UserCompany> empresas = null;
+        if (redisService.validateToken(token))
+        {
+            empresas = redisService.get_user_companies(token);
+        }
+        else
+            return Response.status(Response.Status.OK).entity("Token invalido").build();
         if (req == null)
         {
             return Response
@@ -130,7 +144,6 @@ public class CompanyResource
         }
         User user = User.findById(req.id.getUserId());
         Company company = Company.findById(req.id.getCompanyId());
-        
         if (user == null || company == null) {
             return Response
                 .status(Response.Status.BAD_REQUEST)

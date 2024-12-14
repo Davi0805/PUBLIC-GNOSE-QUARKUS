@@ -33,7 +33,7 @@ public class ProtectedRouteFilter implements ContainerRequestFilter {
             String token = authorizationHeader.substring(7);
             try {
                 String username = jwtUtil.getUsernameFromToken(token);
-                if (!redisService.validateToken(username, token)) {
+                if (!redisService.validateToken(token)) {
                     LOG.warn("Token not found in Redis or invalid");
                     requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED).build());
                 }

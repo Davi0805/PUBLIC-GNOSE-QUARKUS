@@ -31,15 +31,15 @@ public class UserResource {
 
     @POST
     @Path("/login")
-    public Response login(UserLogin user) {
+    public Response login(User user) {
         if (user == null || user.username == null || user.password == null) {
             return Response.status(Response.Status.BAD_REQUEST).entity("Usuario e senha nao fornecido").build();
         }
         //validar o usuário e senha
-        UserLogin foundUser = UserLogin.find("username", user.username).firstResult();
+        User foundUser = User.find("username", user.username).firstResult();
         if (foundUser != null && foundUser.checkHashPassword(user.password)) {
             String token = jwtUtil.generateToken(user.username);
-            if ((redisService.saveToken(user.username, token)) == false)
+            if ((redisService.saveToken(token, foundUser.userCompanies)) == false)
                 return Response.status(Response.Status.BAD_REQUEST).entity("Falha ao salvar token no redis").build();
             NewCookie securecookie = new NewCookie.Builder("AUTH_TOKEN")
                                                 .value(token)
