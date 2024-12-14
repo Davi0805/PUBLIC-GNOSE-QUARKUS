@@ -10,7 +10,13 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Context;
 import java.util.List;
+import java.util.Map;
+
+import jakarta.ws.rs.core.NewCookie;
+import jakarta.ws.rs.core.HttpHeaders;  // Para acessar os cabeçalhos HTTP
+import jakarta.ws.rs.core.Cookie;      // Para acessar o cookie
 
 @Path("/user")
 @Produces(MediaType.APPLICATION_JSON)
@@ -35,16 +41,47 @@ public class UserResource {
             String token = jwtUtil.generateToken(user.username);
             if ((redisService.saveToken(user.username, token)) == false)
                 return Response.status(Response.Status.BAD_REQUEST).entity("Falha ao salvar token no redis").build();
-            /* return Response.ok()
-                .header("Authorization", "Bearer " + token)
-                .entity("{\"token\":\"" + token + "\"}")
-                .build(); */
-                return Response.ok()
+            NewCookie securecookie = new NewCookie.Builder("AUTH_TOKEN")
+                                                .value(token)
+                                                .path("/")
+                                                .httpOnly(true)
+                                                .secure(false)
+                                                .maxAge(7200)
+                                                .sameSite(NewCookie.SameSite.STRICT)
+                                                .build();
+            return Response.ok()
+                .cookie(securecookie)
                 .header("Authorization", "Bearer " + token)
                 .entity("{\"token\":\"" + token + "\"}")
                 .build();
         }
         return Response.status(Response.Status.UNAUTHORIZED).build();
+    }
+
+    @POST
+    @Path("/logout")
+    public Response logout(@CookieParam("AUTH_TOKEN") String token)
+    {
+
+        if (token == null || token.isEmpty())
+            return Response
+            .status(Response.Status.BAD_REQUEST)
+            .entity("Token nao encontrado!")
+            .build();
+
+        redisService.deleteToken(token);
+        NewCookie expiredcookie = new NewCookie.Builder("AUTH_TOKEN")
+                                                .value("")
+                                                .maxAge(0)
+                                                .path("/")
+                                                .secure(false)
+                                                .httpOnly(true)
+                                                .build();
+        return Response
+                .status(Response.Status.OK)
+                .cookie(expiredcookie)
+                .entity("Deslogado com sucesso!")
+                .build();
     }
     
     @GET

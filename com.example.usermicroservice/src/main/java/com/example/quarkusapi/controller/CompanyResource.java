@@ -106,7 +106,7 @@ public class CompanyResource
         if (req == null || req.isEmpty())
             return Response
                     .status(Response.Status.BAD_REQUEST)
-                    .entity("Empresa nao existe!")
+                    .entity("Empresa ou funcionarios nao existem!")
                     .build();
         return Response
                 .status(Response.Status.OK)
