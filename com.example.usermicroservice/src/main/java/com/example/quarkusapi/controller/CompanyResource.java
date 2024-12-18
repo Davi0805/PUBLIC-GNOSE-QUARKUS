@@ -13,6 +13,9 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 
 import org.jboss.logging.Logger;
 
@@ -107,8 +110,13 @@ public class CompanyResource
     @Path("/list_funcs")
     public Response list_company_funcs(@QueryParam("page") @DefaultValue("1") int page,
     @QueryParam("size") @DefaultValue("10") int size,
-     @QueryParam("company") long company_id)
+     @QueryParam("company") long company_id,
+     @CookieParam("AUTH_TOKEN") String token)
     {
+        String empresas = redisService.get_user_companies(token);
+        if (empresas.isEmpty())
+            return Response.status(Response.Status.BAD_REQUEST).entity("Nao faz parte de empresa").build();
+        LOG.infof("Endpoint %s\n", empresas);
         List<User> req = UserCompany.findUsersByCompanyId(company_id);
         if (req == null || req.isEmpty())
             return Response
@@ -128,7 +136,7 @@ public class CompanyResource
     @Transactional
     public Response add_employee(@CookieParam("AUTH_TOKEN") String token, UserCompany req)
     {
-        List<UserCompany> empresas = null;
+        String empresas = null;
         if (redisService.validateToken(token))
         {
             empresas = redisService.get_user_companies(token);

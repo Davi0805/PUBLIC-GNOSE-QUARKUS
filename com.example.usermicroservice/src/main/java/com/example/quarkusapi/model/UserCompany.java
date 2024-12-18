@@ -52,4 +52,5 @@ public class UserCompany extends PanacheEntityBase implements Serializable
                     companyId, permission)
                 .list();
     }
+
 }

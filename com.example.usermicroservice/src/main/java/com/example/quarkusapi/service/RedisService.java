@@ -57,7 +57,7 @@ public class RedisService {
     }
 
     @SuppressWarnings("deprecation")
-    public List<UserCompany> get_user_companies(String token) {
+    public String get_user_companies(String token) {
         try {
             LOG.infof("Retrieving companies for token: %s", token);
             
@@ -65,30 +65,21 @@ public class RedisService {
             
             if (response == null) {
                 LOG.info("No companies found for the given token");
-                return new ArrayList<>();
+                return null;
             }
 
             String userCompaniesJson = response.toString();
             
             if (userCompaniesJson == null || userCompaniesJson.isEmpty()) {
                 LOG.info("Empty companies data for the token");
-                return new ArrayList<>();
+                return null;
             }
 
-            List<UserCompany> userCompanies = objectMapper.readValue(
-                userCompaniesJson, 
-                new TypeReference<List<UserCompany>>() {}
-            );
+            return userCompaniesJson;
 
-            LOG.infof("Retrieved %d companies for token", userCompanies.size());
-            return userCompanies;
-
-        } catch (JsonProcessingException e) {
-            LOG.error("Error parsing companies JSON", e);
-            return new ArrayList<>();
         } catch (Exception e) {
             LOG.error("Unexpected error retrieving user companies", e);
-            return new ArrayList<>();
+            return null;
         }
     }
 
