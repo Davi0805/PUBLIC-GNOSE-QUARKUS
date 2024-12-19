@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-
+import com.example.quarkusapi.model.RedisCompanies;
 import org.jboss.logging.Logger;
 
 import jakarta.validation.Valid;
@@ -63,7 +63,8 @@ public class CompanyResource
     @POST
     @Path("/criar_func")
     @Transactional
-    public Response criar_employee(@Valid newEmployee req)
+    public Response criar_employee(@Valid newEmployee req,
+                                    @CookieParam("AUTH_TOKEN") String token)
     {
         if (req == null)
         {
@@ -72,6 +73,13 @@ public class CompanyResource
                     .entity("Preencha todos os campos!")
                     .build();
         }
+        List<RedisCompanies> empresas = redisService.get_user_companies(token);
+        if (empresas.isEmpty() || !empresas.stream()
+                                    .anyMatch(empresa -> empresa.getId().getCompanyId() == req.getCompany_id() && empresa.getPermission().equals("A")))
+            return Response
+                    .status(Response.Status.FORBIDDEN)
+                    .entity("Nao tem permissao para acessar esta empresa")
+                    .build();
         User existingUser = User.find("username", req.getUsername()).firstResult();
         Company existingCompany = Company.find("id", req.getCompany_id()).firstResult();
         if (existingUser != null)
@@ -109,11 +117,16 @@ public class CompanyResource
     @GET
     @Path("/list_funcs")
     public Response list_company_funcs(@QueryParam("page") @DefaultValue("1") int page,
-    @QueryParam("size") @DefaultValue("10") int size,
-     @QueryParam("company") long company_id,
-     @CookieParam("AUTH_TOKEN") String token)
+                                        @QueryParam("size") @DefaultValue("10") int size,
+                                        @QueryParam("company") long company_id,
+                                        @CookieParam("AUTH_TOKEN") String token)
     {
-        String empresas = redisService.get_user_companies(token);
+        List<RedisCompanies> empresas = redisService.get_user_companies(token);
+        boolean credentials = empresas.stream()
+                                      .anyMatch(empresa -> empresa.getId().getCompanyId() == company_id);
+        if (!credentials)
+            return Response.status(Response.Status.FORBIDDEN).entity("Nao tem permissao para acessar esta empresa").build();
+
         if (empresas.isEmpty())
             return Response.status(Response.Status.BAD_REQUEST).entity("Nao faz parte de empresa").build();
         LOG.infof("Endpoint %s\n", empresas);
@@ -130,25 +143,27 @@ public class CompanyResource
     }
 
 
-    // ? PARA ADICIONAR USUARIO EXISTENTE EM UMA EMPRESA
+    // ! CONSERTAR AUTENTICACAO E PERMISSAO
     @POST
     @Path("/add_func")
     @Transactional
     public Response add_employee(@CookieParam("AUTH_TOKEN") String token, UserCompany req)
     {
-        String empresas = null;
-        if (redisService.validateToken(token))
-        {
-            empresas = redisService.get_user_companies(token);
-        }
-        else
-            return Response.status(Response.Status.OK).entity("Token invalido").build();
         if (req == null)
         {
             return Response
             .status(Response.Status.BAD_REQUEST)
             .entity("Preencha todos os campos!")
             .build();
+        }
+        if (redisService.validateToken(token))
+        {
+            List<RedisCompanies> empresas = redisService.get_user_companies(token);
+            boolean credentials = empresas.stream()
+                                            .anyMatch(empresa -> empresa.getId().getCompanyId() == req.id.getCompanyId()
+                                                                && empresa.getPermission().equals("A"));
+            if (!credentials)
+                return Response.status(Response.Status.FORBIDDEN).entity("Nao tem permissao para adicionar funcionarios").build();
         }
         User user = User.findById(req.id.getUserId());
         Company company = Company.findById(req.id.getCompanyId());

@@ -1,9 +1,6 @@
 package com.example.quarkusapi.model;
 
-import io.quarkus.hibernate.orm.panache.PanacheEntity;
-import jakarta.persistence.*;
 import java.io.Serializable;
-import java.util.Set;
 
 import jakarta.validation.constraints.*;
 

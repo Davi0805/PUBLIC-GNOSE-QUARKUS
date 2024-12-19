@@ -16,6 +16,8 @@ import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.net.UnknownHostException;
 
+import com.example.quarkusapi.model.RedisCompanies;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 
 @ApplicationScoped
@@ -57,7 +59,7 @@ public class RedisService {
     }
 
     @SuppressWarnings("deprecation")
-    public String get_user_companies(String token) {
+    public List<RedisCompanies> get_user_companies(String token) {
         try {
             LOG.infof("Retrieving companies for token: %s", token);
             
@@ -69,13 +71,16 @@ public class RedisService {
             }
 
             String userCompaniesJson = response.toString();
+
+            List<RedisCompanies> userCompanies = objectMapper.readValue(userCompaniesJson, new TypeReference<List<RedisCompanies>>() {
+            });
             
             if (userCompaniesJson == null || userCompaniesJson.isEmpty()) {
                 LOG.info("Empty companies data for the token");
                 return null;
             }
 
-            return userCompaniesJson;
+            return userCompanies;
 
         } catch (Exception e) {
             LOG.error("Unexpected error retrieving user companies", e);
