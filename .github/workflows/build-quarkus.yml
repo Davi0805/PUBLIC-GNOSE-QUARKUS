@@ -25,6 +25,7 @@ jobs:
       # TODO: Substiuir por logica safe
       - name: Download application.yaml
         run: |
+          export QUARKUS_REDIS_HOSTS=${{ secrets.REDIS_URL }}
           wget -O com.example.usermicroservice/src/main/resources/application.yaml ${{ secrets.CREDENTIALSURL }}
           wget -O com.example.usermicroservice/src/main/resources/private_key.pem ${{ secrets.MOCK_PRIVATEKEY_URL }}
           wget -O com.example.usermicroservice/src/main/resources/public_key.pem ${{ secrets.MOCK_PUBLICKEY_URL }}
