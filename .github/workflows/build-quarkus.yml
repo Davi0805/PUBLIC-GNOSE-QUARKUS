@@ -1,0 +1,75 @@
+name: Build and Deploy Quarkus
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: 17
+          distribution: 'temurin'
+
+      # TODO: Substiuir por logica safe
+      - name: Download application.yaml
+        run: |
+          wget -O com.example.usermicroservice/src/main/resources/application.yaml ${{ secrets.CREDENTIALSURL }}
+          wget -O com.example.usermicroservice/src/main/resources/private_key.pem ${{ secrets.MOCK_PRIVATEKEY_URL }}
+          wget -O com.example.usermicroservice/src/main/resources/public_key.pem ${{ secrets.MOCK_PUBLICKEY_URL }}
+
+      # Maven Utils
+      - name: Cache Maven dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      # Build jvm
+      - name: Build JVM
+        working-directory: ./com.example.usermicroservice
+        run: mvn clean package -DskipTests
+
+      # Build
+      - name: Build Native Image
+        working-directory: ./com.example.usermicroservice
+        run: |
+          mvn package \
+            -Pnative \
+            -Dquarkus.native.container-build=true \
+
+      # Joga binario para o Actions
+      - name: Upload Native Image
+        uses: actions/upload-artifact@v3
+        with:
+          name: quarkus-native-image
+          path: ./com.example.usermicroservice/target/*-runner
+
+      # Conecta na ssh e FUTURAMENTE DA DEPLOY
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.VPS_IP }} >> ~/.ssh/known_hosts
+
+      - name: Upload native para vps
+        run: scp -i ~/.ssh/id_ed25519 ./com.example.usermicroservice/target/*-runner root@${{ secrets.VPS_IP }}:~/
+
+      - name: Execute command
+        run: |
+          ssh root@${{ secrets.VPS_IP }} << 'EOF'
+            chmod 777 *
+          EOF

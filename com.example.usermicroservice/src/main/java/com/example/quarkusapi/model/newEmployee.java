@@ -46,7 +46,6 @@ public class newEmployee implements Serializable
     @Size(max = 100)
     private String last_name;
 
-    @NotNull(message = "Preencha todos os campos!")
     private Long company_id;
 
     @NotEmpty(message = "Preencha todos os campos!")

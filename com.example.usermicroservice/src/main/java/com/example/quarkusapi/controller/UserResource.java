@@ -1,5 +1,7 @@
 package com.example.quarkusapi.controller;
 
+import com.example.quarkusapi.Exception.ResourceConflictException;
+import com.example.quarkusapi.Exception.UnauthorizedException;
 import com.example.quarkusapi.model.User;
 import com.example.quarkusapi.model.UserLogin;
 import com.example.quarkusapi.filter.ProtectedRoute;
@@ -32,15 +34,17 @@ public class UserResource {
     @POST
     @Path("/login")
     public Response login(User user) {
-        if (user == null || user.username == null || user.password == null) {
-            return Response.status(Response.Status.BAD_REQUEST).entity("Usuario e senha nao fornecido").build();
-        }
+        if (user == null || user.username == null || user.password == null)
+            throw new BadRequestException("Preencha os campos");
+
         //validar o usuário e senha
         User foundUser = User.find("username", user.username).firstResult();
-        if (foundUser != null && foundUser.checkHashPassword(user.password)) {
+        if (foundUser != null && foundUser.checkHashPassword(user.password) && foundUser.emailVerified) {
             String token = jwtUtil.generateToken(user.username);
-            if ((redisService.saveToken(token, foundUser.userCompanies)) == false)
-                return Response.status(Response.Status.BAD_REQUEST).entity("Falha ao salvar token no redis").build();
+
+            if (!(redisService.saveToken(token, foundUser.userCompanies)))
+                throw new InternalServerErrorException("Erro ao salvar token no Redis");
+
             NewCookie securecookie = new NewCookie.Builder("AUTH_TOKEN")
                                                 .value(token)
                                                 .path("/")
@@ -51,11 +55,10 @@ public class UserResource {
                                                 .build();
             return Response.ok()
                 .cookie(securecookie)
-                .header("Authorization", "Bearer " + token)
                 .entity("{\"token\":\"" + token + "\"}")
                 .build();
         }
-        return Response.status(Response.Status.UNAUTHORIZED).build();
+        throw new UnauthorizedException("User ou senha invalidos");
     }
 
     @POST
@@ -64,10 +67,7 @@ public class UserResource {
     {
 
         if (token == null || token.isEmpty())
-            return Response
-            .status(Response.Status.BAD_REQUEST)
-            .entity("Token nao encontrado!")
-            .build();
+            throw new BadRequestException("Token vazio");
 
         redisService.deleteToken(token);
         NewCookie expiredcookie = new NewCookie.Builder("AUTH_TOKEN")
@@ -85,12 +85,14 @@ public class UserResource {
     }
     
     @GET
-    @ProtectedRoute
     public Response listaUsers(@QueryParam("page") @DefaultValue("1") int page,
-                               @QueryParam("size") @DefaultValue("10") int size) {
-        if (page < 1 || size < 1) {
-            return Response.status(Response.Status.BAD_REQUEST).entity("Pagina ou tamanho muito pequeno").build();
-        }
+                               @QueryParam("size") @DefaultValue("10") int size,
+                               @CookieParam("AUTH_TOKEN") String token) {
+        if (page < 1 || size < 1)
+            throw new BadRequestException("Page ou size invalidos");
+
+        if (!redisService.validateToken(token))
+            throw new UnauthorizedException("Token invalido");
 
         List<User> users = User.findAll().page(page - 1, size).list();
         long totalUsers = User.count();
@@ -107,9 +109,9 @@ public class UserResource {
     public Response criarUser(User user)
     {
         User existingUser  = User.find("username", user.username).firstResult();
-        if (existingUser  != null) {
-            return Response.status(Response.Status.CONFLICT).entity("Usuario ja existe").build();
-        }
+        if (existingUser  != null)
+            throw new ResourceConflictException("Usuario ja existe");
+
         user.setHashPassword(user.password);
         user.persist();
         return Response.status(Response.Status.CREATED).entity(user).build();
@@ -130,12 +132,8 @@ public class UserResource {
     {
         User foundUser = User.findById(id);
         
-        if (foundUser == null) {
-            return Response
-                .status(Response.Status.NOT_FOUND)
-                .entity("User not found!")
-                .build();
-        }
+        if (foundUser == null)
+            throw new NotFoundException("Nao encontrado");
         
         foundUser.delete();
         

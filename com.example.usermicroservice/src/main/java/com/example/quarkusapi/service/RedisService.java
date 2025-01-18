@@ -37,7 +37,7 @@ public class RedisService {
         try {
             String userCompaniesjson = objectMapper.writeValueAsString(userCompanies);
 
-            String response = redisClient.set(Arrays.asList(token, userCompaniesjson)).toString();
+            String response = redisClient.setex(token, String.valueOf(3600),userCompaniesjson).toString();
             LOG.infof("Companies: %s", userCompaniesjson);
             LOG.infof("STATUS REDIS: %s", response);
             return "OK".equals(response);

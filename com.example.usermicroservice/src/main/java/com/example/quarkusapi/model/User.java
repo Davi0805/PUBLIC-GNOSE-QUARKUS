@@ -22,7 +22,7 @@ public class User extends PanacheEntity implements Serializable
     @Column(nullable = false, length = 255)
     public String password;
 
-    @Column(nullable = false, updatable = false, length = 180)
+    @Column(nullable = false, unique = true, updatable = false, length = 180)
     public String email;
     
     @Column(nullable = false, length = 50)
@@ -30,6 +30,8 @@ public class User extends PanacheEntity implements Serializable
 
     @Column(nullable = false, length = 100)
     public String last_name;
+
+    public Boolean emailVerified = false;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference(value = "user-userCompany")
