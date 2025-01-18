@@ -11,7 +11,7 @@ import java.net.http.HttpResponse;
 
 @ApplicationScoped
 public class EmailService {
-    
+
     public void sendEmailVerification(String emailAddress, String name,
                                       @ConfigProperty(name = "email.verification.url") String FUNCTION_URL) {
 
