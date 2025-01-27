@@ -31,7 +31,8 @@ public class User extends PanacheEntity implements Serializable
     @Column(nullable = false, length = 100)
     public String last_name;
 
-    public Boolean emailVerified = false;
+    // TODO: MODIFICAR ANTES DA PROD
+    public Boolean emailVerified = true;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference(value = "user-userCompany")
