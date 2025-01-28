@@ -79,8 +79,10 @@ public class CompanyResource
         userCompany.permission = "A"; // Admin permission
         userCompany.persist();
 
+        // TODO: Modificar sendgrid logic
         // Hita Serverless func para mandar link de verificacao de email
-        // emailService.sendEmailVerification(user.email, user.first_name);
+        String token = redisService.saveEmail(user.id);
+        emailService.sendEmailVerification(user.email, user.first_name, token);
 
 
         return Response

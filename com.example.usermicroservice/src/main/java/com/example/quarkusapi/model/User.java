@@ -32,7 +32,7 @@ public class User extends PanacheEntity implements Serializable
     public String last_name;
 
     // TODO: MODIFICAR ANTES DA PROD
-    public Boolean emailVerified = true;
+    public Boolean emailVerified = false;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference(value = "user-userCompany")

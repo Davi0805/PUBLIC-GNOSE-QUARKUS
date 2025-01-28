@@ -16,6 +16,8 @@ import jakarta.ws.rs.core.Context;
 import java.util.List;
 import java.util.Map;
 
+import com.example.quarkusapi.service.EmailService;
+
 import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.HttpHeaders;  // Para acessar os cabeçalhos HTTP
 import jakarta.ws.rs.core.Cookie;      // Para acessar o cookie
@@ -29,6 +31,9 @@ public class UserResource {
     RedisService redisService;
 
     @Inject
+    EmailService emailService;
+
+    @Inject
     JwtUtils jwtUtil;
 
     @POST
@@ -39,7 +44,10 @@ public class UserResource {
 
         //validar o usuário e senha
         User foundUser = User.find("username", user.username).firstResult();
-        if (foundUser != null && foundUser.checkHashPassword(user.password) && foundUser.emailVerified) {
+        if (!foundUser.emailVerified)
+            throw new UnauthorizedException("Email nao verificado!");
+
+        if (foundUser != null && foundUser.checkHashPassword(user.password)) {
             String token = jwtUtil.generateToken(user.username);
 
             if (!(redisService.saveToken(token, foundUser.userCompanies)))
@@ -58,6 +66,7 @@ public class UserResource {
                 .entity("{\"token\":\"" + token + "\"}")
                 .build();
         }
+
         throw new UnauthorizedException("User ou senha invalidos");
     }
 
@@ -114,9 +123,12 @@ public class UserResource {
 
         user.setHashPassword(user.password);
         user.persist();
+
+
         return Response.status(Response.Status.CREATED).entity(user).build();
     }
 
+    // TODO: Implementar padrao de resposta HTTP e nao model
     @GET
     @Path("/{id}")
     @ProtectedRoute
