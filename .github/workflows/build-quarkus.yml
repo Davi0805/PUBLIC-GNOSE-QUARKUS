@@ -51,13 +51,6 @@ jobs:
             -Pnative \
             -Dquarkus.native.container-build=true \
 
-      # Joga binario para o Actions
-      - name: Upload Native Image
-        uses: actions/upload-artifact@v3
-        with:
-          name: quarkus-native-image
-          path: ./com.example.usermicroservice/target/*-runner
-
       # Conecta na ssh e FUTURAMENTE DA DEPLOY
       - name: Setup SSH
         run: |
