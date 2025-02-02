@@ -8,8 +8,10 @@ import com.example.quarkusapi.model.User;
 import com.example.quarkusapi.model.Company;
 import com.example.quarkusapi.model.UserCompany;
 import com.example.quarkusapi.model.newEmployee;
+import com.example.quarkusapi.service.AuthService;
 import com.example.quarkusapi.service.EmailService;
 import com.example.quarkusapi.service.RedisService;
+import io.vertx.redis.client.Redis;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
@@ -34,6 +36,8 @@ public class CompanyResource
     RedisService redisService;
     @Inject
     EmailService emailService;
+    @Inject
+    AuthService authService;
 
     // TODO: REFATORAR ESTA MERDA SEPARANDO EM SERVICES ETC
     @POST
@@ -155,17 +159,19 @@ public class CompanyResource
     @Path("/list_funcs")
     public Response list_company_funcs(@QueryParam("page") @DefaultValue("1") int page,
                                         @QueryParam("size") @DefaultValue("10") int size,
+                                        @HeaderParam("User-Agent") String userAgent,
+                                        @HeaderParam("X-Forwarded-For") String ip,
                                         @QueryParam("company") long company_id,
                                         @CookieParam("AUTH_TOKEN") String token)
     {
-        List<RedisCompanies> empresas = redisService.get_user_companies(token);
-        boolean credentials = empresas.stream()
-                                      .anyMatch(empresa -> empresa.getId().getCompanyId() == company_id);
+//        List<RedisCompanies> empresas = redisService.get_user_companies(token);
+//        boolean credentials = empresas.stream()
+//                                      .anyMatch(empresa -> empresa.getId().getCompanyId() == company_id);
+//
 
-        if (empresas.isEmpty() || !credentials)
-            throw new UnauthorizedException("Nao tem permissao para acessar esta empresa");
+        if (!authService.checkCompany(token, ip, company_id, userAgent))
+            throw new UnauthorizedException("Nao tem permissao para esta empresa!");
 
-        LOG.infof("Endpoint %s\n", empresas);
         List<User> req = UserCompany.findUsersByCompanyId(company_id);
         if (req == null || req.isEmpty())
             throw new BadRequestException("Empresa nao encontrada");

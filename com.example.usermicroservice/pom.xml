@@ -47,6 +47,15 @@
             <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-metrics</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.loggingjson</groupId>
+            <artifactId>quarkus-logging-json</artifactId>
+            <version>3.1.0</version>
+        </dependency>
+        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>
