@@ -1,8 +1,22 @@
 package com.example.quarkusapi.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
+@RegisterForReflection
 public class RedisCompanies {
     private Id id;
     private String permission;
+
+    @JsonCreator
+    public RedisCompanies(
+            @JsonProperty("id") Id id,
+            @JsonProperty("permission") String permission)
+    {
+        this.id = id;
+        this.permission = permission;
+    }
 
     public Id getId() {
         return id;
