@@ -40,6 +40,7 @@ public class CompanyResource
     AuthService authService;
 
     // TODO: REFATORAR ESTA MERDA SEPARANDO EM SERVICES ETC
+    // TODO: ADIONAR FIELD DE TOKEN E CHECAGEM NO REDIS PARA CONVITE
     @POST
     @Path("/create_user_admin")
     @Transactional
@@ -86,8 +87,8 @@ public class CompanyResource
         // TODO: Modificar sendgrid logic
         // Hita Serverless func para mandar link de verificacao de email
         String token = redisService.saveEmail(user.id);
-        emailService.sendEmailVerification(user.email, user.first_name, token);
-
+        emailService.sendEmailVerificationAsync(user.email, user.first_name, token)
+                .subscribe().with(ignored -> {}, failure -> {});;
 
         return Response
                 .status(Response.Status.CREATED)
@@ -97,16 +98,23 @@ public class CompanyResource
 
     @POST
     @Transactional
-    public Response criar_empresa(Company req)
+    public Response criar_empresa(@HeaderParam("User-Agent") String userAgent,
+                                  @HeaderParam("X-Forwarded-For") String ip,
+                                  @CookieParam("AUTH_TOKEN") String token,
+                                  Company req)
     {
-        if (req == null || req.company_name == null) // Adicionar mais checagems apos deixar entity mais cheia
-            throw new BadRequestException("Preencha todos os campos!");
+        // AUTH
+        if (!authService.checkUser(token, ip, userAgent))
+            throw new UnauthorizedException("Falha na autenticacao!");
 
+        // CHECAGEM
         Company existing_company = Company.find("company_name", req.company_name).firstResult();
         if (existing_company != null)
             throw new ResourceConflictException("Empresa ja existe");
 
+        // SALVA TRANSACTION
         req.persist();
+
         return Response
         .status(Response.Status.OK)
         .entity(req)
@@ -119,26 +127,26 @@ public class CompanyResource
     @Path("/criar_func")
     @Transactional
     public Response criar_employee(@Valid newEmployee req,
-                                    @CookieParam("AUTH_TOKEN") String token)
+                                   @CookieParam("AUTH_TOKEN") String token,
+                                   @HeaderParam("X-Forwarded-For") String ip,
+                                   @HeaderParam("User-Agent") String userAgent)
     {
-        if (req == null)
-            throw new BadRequestException("Preencha todos os campos!");
 
-        List<RedisCompanies> empresas = redisService.get_user_companies(token);
-        if (empresas.isEmpty() || !empresas.stream()
-                                    .anyMatch(empresa -> empresa.getId().getCompanyId() == req.getCompany_id() && empresa.getPermission().equals("A")))
-            throw new UnauthorizedException("Nao tem permissao para criar funcionarios nessa empresa");
+        // AUTH
+        List<RedisCompanies> empresas = authService.check(token, ip, userAgent);
+        if (empresas.stream().noneMatch(empresa ->
+                empresa.getId().getCompanyId() == req.getCompany_id() &&
+                        empresa.getPermission().equals("A")))
+            throw new UnauthorizedException("Nao faz parte dessa empresa ou nao tem permissao!");
 
-
+        // CHECAGEM - TODO: OTIMIZAR QUERY
         User existingUser = User.find("username", req.getUsername()).firstResult();
         Company existingCompany = Company.find("id", req.getCompany_id()).firstResult();
-        if (existingUser != null)
-            throw new ResourceConflictException("Usuario ja existe");
+        if (existingUser != null || existingCompany != null)
+            throw new ResourceConflictException("Usuario ou empresa ja existe");
 
-        if (existingCompany == null)
-            throw new BadRequestException("Empresa nao existe");
-
-        
+        //TODO: OTIMIZAR QUERY
+        // DB - QUERY
         User user_transc = new User().fill_User(req);
         user_transc.persist();
 
@@ -146,7 +154,6 @@ public class CompanyResource
         relation.user = user_transc;
         relation.company = existingCompany;
         relation.permission = req.getCompany_permission();
-
         relation.persist();
 
         return Response
@@ -155,28 +162,23 @@ public class CompanyResource
                     .build();
     }
 
-    // TODO: CHECAR SE O CLIENTE ESTA PESQUISANDO OS FUNCS DE UMA EMPRESA QUE ELE FAZ PARTE
-    // TODO: E SE TEM PERMISSAO PARA TAL ACAO
     @GET
-    @Path("/list_funcs")
+    @Path("/list_funcs/{company_id}")
     public Response list_company_funcs(@QueryParam("page") @DefaultValue("1") int page,
                                         @QueryParam("size") @DefaultValue("10") int size,
                                         @HeaderParam("User-Agent") String userAgent,
                                         @HeaderParam("X-Forwarded-For") String ip,
-                                        @QueryParam("company") long company_id,
+                                        @PathParam("company_id") long company_id,
                                         @CookieParam("AUTH_TOKEN") String token)
     {
-//        List<RedisCompanies> empresas = redisService.get_user_companies(token);
-//        boolean credentials = empresas.stream()
-//                                      .anyMatch(empresa -> empresa.getId().getCompanyId() == company_id);
-//
-
+        // AUTH
         if (!authService.checkCompany(token, ip, company_id, userAgent))
             throw new UnauthorizedException("Nao tem permissao para esta empresa!");
 
+        // DB - QUERY
         List<User> req = UserCompany.findUsersByCompanyId(company_id);
         if (req == null || req.isEmpty())
-            throw new BadRequestException("Empresa nao encontrada");
+            throw new NotFoundException("Empresa nao encontrada");
 
         return Response
                 .status(Response.Status.OK)
@@ -185,39 +187,37 @@ public class CompanyResource
     }
 
 
-    // ! CONSERTAR AUTENTICACAO E PERMISSAO
     @POST
     @Path("/add_func")
     @Transactional
-    public Response add_employee(@CookieParam("AUTH_TOKEN") String token, UserCompany req)
+    public Response add_employee(@CookieParam("AUTH_TOKEN") String token,
+                                 @HeaderParam("X-Forwarded-For") String ip,
+                                 @HeaderParam("User-Agent") String userAgent,
+                                 UserCompany req)
     {
-        if (req == null)
-            throw new BadRequestException("Preencha todos os campos");
+        // AUTH - TODO: LIMPAR DPS
+        List<RedisCompanies> empresas = authService.check(token, ip, userAgent);
+        if (empresas.stream().noneMatch(empresa ->
+                empresa.getId().getCompanyId() == req.id.getCompanyId() &&
+                        empresa.getPermission().equals("A")))
+            throw new UnauthorizedException("Nao faz parte dessa empresa ou nao tem permissao!");
 
-        if (redisService.validateToken(token))
-        {
-            List<RedisCompanies> empresas = redisService.get_user_companies(token);
-            boolean credentials = empresas.stream()
-                                            .anyMatch(empresa -> empresa.getId().getCompanyId() == req.id.getCompanyId()
-                                                                && empresa.getPermission().equals("A"));
-            if (!credentials)
-                throw new UnauthorizedException("Nao tem permissao para acessar esta empresa");
-        }
+        // DB - QUERY - TODO: OTIMIZAR PARA MENOS QUERIES
         User user = User.findById(req.id.getUserId());
         Company company = Company.findById(req.id.getCompanyId());
         if (user == null || company == null)
             throw new BadRequestException("Preencha todos os campos");
-        
-        if (req.permission == null || req.permission.isEmpty())
-            throw new jakarta.ws.rs.BadRequestException("Permissao invalida");
-        
+
+        // ATRIBUI
         req.user = user;
         req.company = company;
+
+        // CHECAGEM
+        if (req.permission == null || req.permission.isEmpty())
+            throw new BadRequestException("Permissao invalida");
         
         req.persist();
-        return Response
-            .status(Response.Status.OK)
-            .entity(req)
-            .build();
+
+        return Response.ok().entity(req).build();
     }
 }
