@@ -9,6 +9,9 @@ import org.jboss.logging.Logger;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.util.UUID;
+import com.example.quarkusapi.Exception.BadRequestException;
+
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,6 +34,31 @@ public class RedisService {
 
     @Inject
     private ObjectMapper objectMapper;
+
+    @SuppressWarnings("deprecation")
+    public String saveEmail(Long userId)
+    {
+        try {
+            // Gera token que sera utilizado para verificar email
+            String token = UUID.randomUUID().toString();
+            String response = redisClient.setex(token, String.valueOf(604800), userId.toString()).toString();
+            if (response == "OK")
+                return token;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new BadRequestException("Falha ao cadastrar email");
+        }
+        return null;
+    }
+
+    @SuppressWarnings("deprecation")
+    public Long verifyEmailToken(String token)
+    {
+        Response response = redisClient.get(token);
+        // TODO: Adicionar verificacao
+        Long userId = Long.parseLong(response.toString());
+        return userId;
+    }
 
     @SuppressWarnings("deprecation")
     public boolean saveToken(String token, Set<UserCompany> userCompanies) {

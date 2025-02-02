@@ -11,17 +11,20 @@ import java.net.http.HttpResponse;
 
 @ApplicationScoped
 public class EmailService {
+    @ConfigProperty(name = "email.verification.url")
+    String FUNCTION_URL;
 
-    public void sendEmailVerification(String emailAddress, String name,
-                                      @ConfigProperty(name = "email.verification.url") String FUNCTION_URL) {
+    // Transformar em Async depois
+    public void sendEmailVerification(String emailAddress, String name, String token) {
 
         // TODO: Substituir por DTO DEPOIS
         String payload = String.format("""
             {
                 "to": "%s",
-                "name": "%s"
+                "name": "%s",
+                "token": "%s"
             }
-        """, emailAddress, name);
+        """, emailAddress, name, token);
 
         try {
             HttpClient client = HttpClient.newHttpClient();

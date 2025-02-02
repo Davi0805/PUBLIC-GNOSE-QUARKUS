@@ -31,6 +31,7 @@ public class User extends PanacheEntity implements Serializable
     @Column(nullable = false, length = 100)
     public String last_name;
 
+    // TODO: MODIFICAR ANTES DA PROD
     public Boolean emailVerified = false;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
