@@ -1,5 +1,7 @@
 package com.example.quarkusapi.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
 import java.io.Serializable;
@@ -14,7 +16,17 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 @Table(name = "user_company")
 public class UserCompany extends PanacheEntityBase implements Serializable
 {
-    
+    private Long user_id;
+    private Long company_id;
+
+    public UserCompany() {}
+
+    @JsonCreator
+    public UserCompany(@JsonProperty("user_id") Long user_id, @JsonProperty("company_id") Long companyId) {
+        this.user_id = user_id;
+        this.company_id = companyId;
+    }
+
     @EmbeddedId
     public UserCompanyId id = new UserCompanyId();
 
