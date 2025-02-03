@@ -68,7 +68,7 @@ public class UserResource {
                                                 .httpOnly(true)
                                                 .secure(false)
                                                 .maxAge(7200)
-                                                .sameSite(NewCookie.SameSite.STRICT)
+                                                .sameSite(NewCookie.SameSite.NONE)
                                                 .build();
             return Response.ok()
                 .cookie(securecookie)
