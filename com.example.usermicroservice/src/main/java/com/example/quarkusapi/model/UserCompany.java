@@ -3,6 +3,7 @@ package com.example.quarkusapi.model;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import jakarta.persistence.*;
 import java.io.Serializable;
 
@@ -11,9 +12,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import jdk.jfr.Registered;
 
 @Entity
 @Table(name = "user_company")
+@RegisterForReflection
 public class UserCompany extends PanacheEntityBase implements Serializable
 {
     private Long user_id;
