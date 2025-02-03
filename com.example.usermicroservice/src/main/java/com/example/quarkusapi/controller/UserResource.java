@@ -81,8 +81,11 @@ public class UserResource {
 
     @POST
     @Path("/logout")
-    public Response logout(@CookieParam("AUTH_TOKEN") String token)
+    public Response logout(@HeaderParam("Authorization") String token)
     {
+
+        if (token != null)
+            token = token.substring(7);
 
         if (token == null || token.isEmpty())
             throw new BadRequestException("Token vazio");
@@ -106,7 +109,7 @@ public class UserResource {
 //    @GET
 //    public Response listaUsers(@QueryParam("page") @DefaultValue("1") int page,
 //                               @QueryParam("size") @DefaultValue("10") int size,
-//                               @CookieParam("AUTH_TOKEN") String token) {
+//                               @HeaderParam("Authorization") String token) {
 //        if (page < 1 || size < 1)
 //            throw new BadRequestException("Page ou size invalidos");
 //
@@ -141,10 +144,13 @@ public class UserResource {
     @GET
     @Path("/{id}")
     public Response buscarUser(@PathParam("id") Long id,
-                           @CookieParam("AUTH_TOKEN") String token,
+                           @HeaderParam("Authorization") String token,
                            @HeaderParam("X-Forwarded-For") String ip,
                            @HeaderParam("User-Agent") String userAgent)
     {
+        if (token != null)
+            token = token.substring(7);
+
         // Db - query
         User user = User.findById(id);
         if (user == null)

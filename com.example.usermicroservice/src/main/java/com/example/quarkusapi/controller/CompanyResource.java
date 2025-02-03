@@ -103,9 +103,12 @@ public class CompanyResource
     @Transactional
     public Response criar_empresa(@HeaderParam("User-Agent") String userAgent,
                                   @HeaderParam("X-Forwarded-For") String ip,
-                                  @CookieParam("AUTH_TOKEN") String token,
+                                  @HeaderParam("Authorization") String token,
                                   Company req)
     {
+        if (token != null)
+            token = token.substring(7);
+
         // AUTH
         if (!authService.checkUser(token, ip, userAgent))
             throw new UnauthorizedException("Falha na autenticacao!");
@@ -130,10 +133,12 @@ public class CompanyResource
     @Path("/criar_func")
     @Transactional
     public Response criar_employee(@Valid newEmployee req,
-                                   @CookieParam("AUTH_TOKEN") String token,
+                                   @HeaderParam("Authorization") String token,
                                    @HeaderParam("X-Forwarded-For") String ip,
                                    @HeaderParam("User-Agent") String userAgent)
     {
+        if (token != null)
+            token = token.substring(7);
 
         // AUTH
         List<RedisCompanies> empresas = authService.check(token, ip, userAgent);
@@ -173,8 +178,11 @@ public class CompanyResource
                                         @HeaderParam("User-Agent") String userAgent,
                                         @HeaderParam("X-Forwarded-For") String ip,
                                         @PathParam("company_id") long company_id,
-                                        @CookieParam("AUTH_TOKEN") String token)
+                                        @HeaderParam("Authorization") String token)
     {
+        if (token != null)
+            token = token.substring(7);
+
         // AUTH
         if (!authService.checkCompany(token, ip, company_id, userAgent))
             throw new UnauthorizedException("Nao tem permissao para esta empresa!");
@@ -194,11 +202,14 @@ public class CompanyResource
     @POST
     @Path("/add_func")
     @Transactional
-    public Response add_employee(@CookieParam("AUTH_TOKEN") String token,
+    public Response add_employee(@HeaderParam("Authorization") String token,
                                  @HeaderParam("X-Forwarded-For") String ip,
                                  @HeaderParam("User-Agent") String userAgent,
                                  UserCompany req)
     {
+        if (token != null)
+            token = token.substring(7);
+
         // AUTH - TODO: LIMPAR DPS
         List<RedisCompanies> empresas = authService.check(token, ip, userAgent);
         if (empresas.stream().noneMatch(empresa ->
