@@ -19,15 +19,15 @@ import jdk.jfr.Registered;
 @RegisterForReflection
 public class UserCompany extends PanacheEntityBase implements Serializable
 {
-    private Long user_id;
-    private Long company_id;
+    private Long userId;
+    private Long companyId;
 
     public UserCompany() {}
 
     @JsonCreator
-    public UserCompany(@JsonProperty("user_id") Long user_id, @JsonProperty("company_id") Long companyId) {
-        this.user_id = user_id;
-        this.company_id = companyId;
+    public UserCompany(@JsonProperty("user_id") Long user_id, @JsonProperty("company_id") Long company_Id) {
+        this.userId = user_id;
+        this.companyId = company_Id;
     }
 
     @EmbeddedId
