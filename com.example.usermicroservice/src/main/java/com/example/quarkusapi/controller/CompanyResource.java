@@ -1,6 +1,7 @@
 package com.example.quarkusapi.controller;
 
 import com.example.quarkusapi.DTO.CreateUserAdminRequestDTO;
+import com.example.quarkusapi.DTO.EmailVerificationRequest;
 import com.example.quarkusapi.Exception.BadRequestException;
 import com.example.quarkusapi.Exception.ResourceConflictException;
 import com.example.quarkusapi.Exception.UnauthorizedException;
@@ -20,6 +21,8 @@ import jakarta.ws.rs.core.Response;
 import java.util.List;
 
 import com.example.quarkusapi.model.RedisCompanies;
+import org.eclipse.microprofile.metrics.MetricUnits;
+import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.jboss.logging.Logger;
 
 import jakarta.validation.Valid;
@@ -87,7 +90,7 @@ public class CompanyResource
         // TODO: Modificar sendgrid logic
         // Hita Serverless func para mandar link de verificacao de email
         String token = redisService.saveEmail(user.id);
-        emailService.sendEmailVerificationAsync(user.email, user.first_name, token)
+        emailService.sendEmailVerificationAsync(new EmailVerificationRequest(user.email, user.first_name, redisService.saveEmail(user.id)))
                 .subscribe().with(ignored -> {}, failure -> {});;
 
         return Response
@@ -164,6 +167,7 @@ public class CompanyResource
 
     @GET
     @Path("/list_funcs/{company_id}")
+    @Timed(name = "Get-funcs", description = "Latencia para get funcs", unit = MetricUnits.MILLISECONDS, absolute = true)
     public Response list_company_funcs(@QueryParam("page") @DefaultValue("1") int page,
                                         @QueryParam("size") @DefaultValue("10") int size,
                                         @HeaderParam("User-Agent") String userAgent,
@@ -176,7 +180,7 @@ public class CompanyResource
             throw new UnauthorizedException("Nao tem permissao para esta empresa!");
 
         // DB - QUERY
-        List<User> req = UserCompany.findUsersByCompanyId(company_id);
+        List<User> req = UserCompany.find("company_id", company_id).page(page - 1, size).list();
         if (req == null || req.isEmpty())
             throw new NotFoundException("Empresa nao encontrada");
 

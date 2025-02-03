@@ -2,11 +2,14 @@ package com.example.quarkusapi.controller;
 
 import com.example.quarkusapi.Exception.ResourceConflictException;
 import com.example.quarkusapi.Exception.UnauthorizedException;
+import com.example.quarkusapi.model.RedisCompanies;
 import com.example.quarkusapi.model.User;
 import com.example.quarkusapi.model.UserLogin;
 import com.example.quarkusapi.filter.ProtectedRoute;
+import com.example.quarkusapi.service.AuthService;
 import com.example.quarkusapi.service.RedisService;
 import com.example.quarkusapi.utils.JwtUtils;
+import io.vertx.redis.client.Redis;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
@@ -21,6 +24,8 @@ import com.example.quarkusapi.service.EmailService;
 import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.HttpHeaders;  // Para acessar os cabeçalhos HTTP
 import jakarta.ws.rs.core.Cookie;      // Para acessar o cookie
+import org.eclipse.microprofile.metrics.MetricUnits;
+import org.eclipse.microprofile.metrics.annotation.Timed;
 
 @Path("/user")
 @Produces(MediaType.APPLICATION_JSON)
@@ -35,9 +40,13 @@ public class UserResource {
 
     @Inject
     JwtUtils jwtUtil;
+    @Inject
+    AuthService authService;
 
+    // TODO: Adicionar rate limit
     @POST
     @Path("/login")
+    @Timed(name = "Post-Login", description = "Latencia para executar login", unit = MetricUnits.MILLISECONDS, absolute = true)
     public Response login(User user) {
         if (user == null || user.username == null || user.password == null)
             throw new BadRequestException("Preencha os campos");
@@ -78,6 +87,7 @@ public class UserResource {
         if (token == null || token.isEmpty())
             throw new BadRequestException("Token vazio");
 
+        // REFATORAR PARA MAIS SAFE
         redisService.deleteToken(token);
         NewCookie expiredcookie = new NewCookie.Builder("AUTH_TOKEN")
                                                 .value("")
@@ -93,24 +103,24 @@ public class UserResource {
                 .build();
     }
     
-    @GET
-    public Response listaUsers(@QueryParam("page") @DefaultValue("1") int page,
-                               @QueryParam("size") @DefaultValue("10") int size,
-                               @CookieParam("AUTH_TOKEN") String token) {
-        if (page < 1 || size < 1)
-            throw new BadRequestException("Page ou size invalidos");
-
-        if (!redisService.validateToken(token))
-            throw new UnauthorizedException("Token invalido");
-
-        List<User> users = User.findAll().page(page - 1, size).list();
-        long totalUsers = User.count();
-
-        return Response.ok()
-                .header("X-Total-Count", totalUsers)
-                .entity(users)
-                .build();
-    }
+//    @GET
+//    public Response listaUsers(@QueryParam("page") @DefaultValue("1") int page,
+//                               @QueryParam("size") @DefaultValue("10") int size,
+//                               @CookieParam("AUTH_TOKEN") String token) {
+//        if (page < 1 || size < 1)
+//            throw new BadRequestException("Page ou size invalidos");
+//
+//        if (!redisService.validateToken(token))
+//            throw new UnauthorizedException("Token invalido");
+//
+//        List<User> users = User.findAll().page(page - 1, size).list();
+//        long totalUsers = User.count();
+//
+//        return Response.ok()
+//                .header("X-Total-Count", totalUsers)
+//                .entity(users)
+//                .build();
+//    }
 
     @POST
     /* @ProtectedRoute */
@@ -128,29 +138,42 @@ public class UserResource {
         return Response.status(Response.Status.CREATED).entity(user).build();
     }
 
-    // TODO: Implementar padrao de resposta HTTP e nao model
     @GET
     @Path("/{id}")
-    @ProtectedRoute
-    public User buscarUser(@PathParam("id") Long id)
+    public Response buscarUser(@PathParam("id") Long id,
+                           @CookieParam("AUTH_TOKEN") String token,
+                           @HeaderParam("X-Forwarded-For") String ip,
+                           @HeaderParam("User-Agent") String userAgent)
     {
-        return User.findById(id);
+        // Db - query
+        User user = User.findById(id);
+        if (user == null)
+            throw new NotFoundException("Usuario nao encontrado!");
+
+        // AUTH
+        List<RedisCompanies> empresas = authService.check(token, ip, userAgent);
+        if (empresas.stream().noneMatch(empresa ->
+                empresa.getId().getUserId() == user.id))
+            throw new UnauthorizedException("Nao faz parte dessa empresa ou nao tem permissao!");
+
+
+        return Response.ok(user).build();
     }
 
-    @DELETE
-    @Path("/{id}")
-    @Transactional
-    public Response delete_user(@PathParam("id") Long id)
-    {
-        User foundUser = User.findById(id);
-        
-        if (foundUser == null)
-            throw new NotFoundException("Nao encontrado");
-        
-        foundUser.delete();
-        
-        return Response
-            .status(Response.Status.NO_CONTENT)
-            .build();
-    }
+//    @DELETE
+//    @Path("/{id}")
+//    @Transactional
+//    public Response delete_user(@PathParam("id") Long id)
+//    {
+//        User foundUser = User.findById(id);
+//
+//        if (foundUser == null)
+//            throw new NotFoundException("Nao encontrado");
+//
+//        foundUser.delete();
+//
+//        return Response
+//            .status(Response.Status.NO_CONTENT)
+//            .build();
+//    }
 }

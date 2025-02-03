@@ -9,13 +9,10 @@ import org.jboss.logging.Logger;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.util.UUID;
+import java.util.*;
+
 import com.example.quarkusapi.Exception.BadRequestException;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.net.UnknownHostException;
 
@@ -42,13 +39,14 @@ public class RedisService {
             // Gera token que sera utilizado para verificar email
             String token = UUID.randomUUID().toString();
             String response = redisClient.setex(token, String.valueOf(604800), userId.toString()).toString();
-            if (response == "OK")
+            LOG.info("Token validacao email: " + token + " response: " + response);
+            if (Objects.equals(response, "OK"))
                 return token;
+            else throw new BadRequestException("Token invalido");
         } catch (Exception e) {
             e.printStackTrace();
             throw new BadRequestException("Falha ao cadastrar email");
         }
-        return null;
     }
 
     @SuppressWarnings("deprecation")
