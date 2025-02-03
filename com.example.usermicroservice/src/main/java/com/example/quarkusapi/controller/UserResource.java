@@ -65,8 +65,8 @@ public class UserResource {
             NewCookie securecookie = new NewCookie.Builder("AUTH_TOKEN")
                                                 .value(token)
                                                 .path("/")
-                                                .httpOnly(true)
-                                                .secure(false)
+                                                .httpOnly(false)
+                                                .secure(false) // https
                                                 .maxAge(7200)
                                                 .sameSite(NewCookie.SameSite.NONE)
                                                 .build();
