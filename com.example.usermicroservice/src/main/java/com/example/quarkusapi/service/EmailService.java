@@ -30,7 +30,6 @@ public class EmailService {
 
         MDC.put("emailAddress", req.getEmail());
         MDC.put("name", req.getName());
-        LOGGER.info("token do email verification: " + req.getToken());
 
         // TODO: Substituir por DTO DEPOIS
         String payload = String.format("""

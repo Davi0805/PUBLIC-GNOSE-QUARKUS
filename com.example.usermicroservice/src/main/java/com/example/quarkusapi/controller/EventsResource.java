@@ -14,7 +14,7 @@ public class EventsResource {
     RedisService redisService;
 
     // Substituir por logica mais safe talvez com redis e hash
-    @POST
+    @GET
     @Transactional
     @Path("/verify-email/{token}")
     public Response verifyEmail(@PathParam("token") String token) {
