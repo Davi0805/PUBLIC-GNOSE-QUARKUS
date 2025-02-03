@@ -58,6 +58,13 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H ${{ secrets.VPS_IP }} >> ~/.ssh/known_hosts
+          
+      - name: Desativa aplicacao
+        run: |
+          ssh root@${{ secrets.VPS_IP }} << 'EOF'
+            docker compose down
+            rm com.example.usermicroservice-1.0.0-SNAPSHOT-runner
+          EOF
 
       - name: Upload native para vps
         run: scp -i ~/.ssh/id_ed25519 ./com.example.usermicroservice/target/*-runner root@${{ secrets.VPS_IP }}:~/
@@ -66,4 +73,5 @@ jobs:
         run: |
           ssh root@${{ secrets.VPS_IP }} << 'EOF'
             chmod 777 *
+            docker compose up -d
           EOF
