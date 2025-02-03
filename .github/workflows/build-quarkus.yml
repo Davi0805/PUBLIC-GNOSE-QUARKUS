@@ -63,7 +63,7 @@ jobs:
         run: |
           ssh root@${{ secrets.VPS_IP }} << 'EOF'
             docker compose down
-            rm shipments-1.0.0-SNAPSHOT-runner
+            rm com.example.usermicroservice-1.0.0-SNAPSHOT-runner
           EOF
 
       - name: Upload native para vps
