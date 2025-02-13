@@ -25,7 +25,7 @@ public class UserCompany extends PanacheEntityBase implements Serializable
     public UserCompany() {}
 
     @JsonCreator
-    public UserCompany(@JsonProperty("userId") Long user_id, @JsonProperty("companyId") Long company_Id) {
+    public UserCompany(@JsonProperty("user_id") Long user_id, @JsonProperty("companyId") Long company_Id) {
         this.userId = user_id;
         this.companyId = company_Id;
     }
