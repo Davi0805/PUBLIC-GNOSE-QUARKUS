@@ -52,8 +52,6 @@ public class UserResource {
     @Path("/login")
     @Timed(name = "Post-Login", description = "Latencia para executar login", unit = MetricUnits.MILLISECONDS, absolute = true)
     public Response login(User user) {
-        if (user == null || user.username == null || user.password == null)
-            throw new BadRequestException("Preencha os campos");
 
         //validar o usuário e senha
         User foundUser = userRepository.find("username", user.username).firstResult();
