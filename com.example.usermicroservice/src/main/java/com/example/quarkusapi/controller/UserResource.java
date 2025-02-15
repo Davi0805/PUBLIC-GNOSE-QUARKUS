@@ -2,6 +2,7 @@ package com.example.quarkusapi.controller;
 
 import com.example.quarkusapi.Exception.ResourceConflictException;
 import com.example.quarkusapi.Exception.UnauthorizedException;
+import com.example.quarkusapi.Repositories.UserRepository;
 import com.example.quarkusapi.model.RedisCompanies;
 import com.example.quarkusapi.model.User;
 import com.example.quarkusapi.model.UserLogin;
@@ -43,6 +44,9 @@ public class UserResource {
     @Inject
     AuthService authService;
 
+    @Inject
+    UserRepository userRepository;
+
     // TODO: Adicionar rate limit
     @POST
     @Path("/login")
@@ -52,11 +56,14 @@ public class UserResource {
             throw new BadRequestException("Preencha os campos");
 
         //validar o usuário e senha
-        User foundUser = User.find("username", user.username).firstResult();
+        User foundUser = userRepository.find("username", user.username).firstResult();
+        if (foundUser == null)
+            throw new BadRequestException("User nao encontrado");
+
         if (!foundUser.emailVerified)
             throw new UnauthorizedException("Email nao verificado!");
 
-        if (foundUser != null && foundUser.checkHashPassword(user.password)) {
+        if (foundUser.checkHashPassword(user.password)) {
             String token = jwtUtil.generateToken(user.username);
 
             if (!(redisService.saveToken(token, foundUser.userCompanies)))
@@ -130,12 +137,14 @@ public class UserResource {
     @Transactional
     public Response criarUser(User user)
     {
-        User existingUser  = User.find("username", user.username).firstResult();
-        if (existingUser  != null)
+
+        // TODO: Adicionar checagem para email
+        User existingUser  = userRepository.find("username", user.username).firstResult();
+        if (existingUser != null)
             throw new ResourceConflictException("Usuario ja existe");
 
         user.setHashPassword(user.password);
-        user.persist();
+        userRepository.persist(user);
 
 
         return Response.status(Response.Status.CREATED).entity(user).build();
@@ -152,7 +161,7 @@ public class UserResource {
             token = token.substring(7);
 
         // Db - query
-        User user = User.findById(id);
+        User user = userRepository.findById(id);
         if (user == null)
             throw new NotFoundException("Usuario nao encontrado!");
 
