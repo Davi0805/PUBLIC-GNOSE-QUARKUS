@@ -5,13 +5,13 @@ import com.example.quarkusapi.DTO.EmailVerificationRequest;
 import com.example.quarkusapi.Exception.BadRequestException;
 import com.example.quarkusapi.Exception.ResourceConflictException;
 import com.example.quarkusapi.Exception.UnauthorizedException;
-import com.example.quarkusapi.model.User;
-import com.example.quarkusapi.model.Company;
-import com.example.quarkusapi.model.UserCompany;
-import com.example.quarkusapi.model.newEmployee;
+import com.example.quarkusapi.Repositories.UserCompanyRepository;
+import com.example.quarkusapi.Repositories.UserRepository;
+import com.example.quarkusapi.model.*;
 import com.example.quarkusapi.service.AuthService;
 import com.example.quarkusapi.service.EmailService;
 import com.example.quarkusapi.service.RedisService;
+import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.vertx.redis.client.Redis;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -20,7 +20,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 
-import com.example.quarkusapi.model.RedisCompanies;
 import org.eclipse.microprofile.metrics.MetricUnits;
 import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.jboss.logging.Logger;
@@ -41,6 +40,10 @@ public class CompanyResource
     EmailService emailService;
     @Inject
     AuthService authService;
+    @Inject
+    UserRepository userRepository;
+    @Inject
+    UserCompanyRepository userCompanyRepository;
 
     // TODO: REFATORAR ESTA MERDA SEPARANDO EM SERVICES ETC
     // TODO: ADIONAR FIELD DE TOKEN E CHECAGEM NO REDIS PARA CONVITE
@@ -62,7 +65,7 @@ public class CompanyResource
 
 
         // User ja existe? // CHECAR DEPOIS USERNAME E EMAIL
-        User existingUser = User.find("email",
+        User existingUser = userRepository.find("email",
                 employeeRequest.getEmail()).firstResult();
 
 
@@ -73,19 +76,22 @@ public class CompanyResource
         // Cria empresa
         Company company = new Company();
         company.company_name = companyRequest.company_name;
-        company.persist();
+        company.persistAndFlush();
 
         // Cria user
         User user = new User();
         user.fill_User(employeeRequest);
-        user.persist();
+        userRepository.persist(user);
+        userRepository.flush();
 
         // Adiciona userid, company_id e permission na tabela de conexoes
         UserCompany userCompany = new UserCompany();
+        LOG.info(user + "   |    " + company);
+        userCompany.id = new UserCompanyId(user.id, company.id);
         userCompany.user = user;
         userCompany.company = company;
         userCompany.permission = "A"; // Admin permission
-        userCompany.persist();
+        userCompanyRepository.persist(userCompany);
 
         // TODO: Modificar sendgrid logic
         // Hita Serverless func para mandar link de verificacao de email
@@ -148,7 +154,7 @@ public class CompanyResource
             throw new UnauthorizedException("Nao faz parte dessa empresa ou nao tem permissao!");
 
         // CHECAGEM - TODO: OTIMIZAR QUERY
-        User existingUser = User.find("username", req.getUsername()).firstResult();
+        User existingUser = userRepository.find("username", req.getUsername()).firstResult();
         Company existingCompany = Company.find("id", req.getCompany_id()).firstResult();
         if (existingUser != null || existingCompany != null)
             throw new ResourceConflictException("Usuario ou empresa ja existe");
@@ -156,13 +162,13 @@ public class CompanyResource
         //TODO: OTIMIZAR QUERY
         // DB - QUERY
         User user_transc = new User().fill_User(req);
-        user_transc.persist();
+        userRepository.persist(user_transc);
 
         UserCompany relation = new UserCompany();
         relation.user = user_transc;
         relation.company = existingCompany;
         relation.permission = req.getCompany_permission();
-        relation.persist();
+        userCompanyRepository.persist(relation);
 
         return Response
                     .status(Response.Status.OK)
@@ -188,7 +194,7 @@ public class CompanyResource
             throw new UnauthorizedException("Nao tem permissao para esta empresa!");
 
         // DB - QUERY
-        List<User> req = UserCompany.find("company_id", company_id).page(page - 1, size).list();
+        List<User> req = userRepository.find("company_id", company_id).page(page - 1, size).list();
         if (req == null || req.isEmpty())
             throw new NotFoundException("Empresa nao encontrada");
 
@@ -218,7 +224,7 @@ public class CompanyResource
             throw new UnauthorizedException("Nao faz parte dessa empresa ou nao tem permissao!");
 
         // DB - QUERY - TODO: OTIMIZAR PARA MENOS QUERIES
-        User user = User.findById(req.id.getUserId());
+        User user = userRepository.findById(req.id.getUserId());
         Company company = Company.findById(req.id.getCompanyId());
         if (user == null || company == null)
             throw new BadRequestException("Preencha todos os campos");
@@ -231,7 +237,7 @@ public class CompanyResource
         if (req.permission == null || req.permission.isEmpty())
             throw new BadRequestException("Permissao invalida");
         
-        req.persist();
+        userCompanyRepository.persist(req);
 
         return Response.ok().entity(req).build();
     }
