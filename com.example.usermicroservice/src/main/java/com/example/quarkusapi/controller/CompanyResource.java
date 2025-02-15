@@ -5,6 +5,7 @@ import com.example.quarkusapi.DTO.EmailVerificationRequest;
 import com.example.quarkusapi.Exception.BadRequestException;
 import com.example.quarkusapi.Exception.ResourceConflictException;
 import com.example.quarkusapi.Exception.UnauthorizedException;
+import com.example.quarkusapi.Repositories.CompanyRepository;
 import com.example.quarkusapi.Repositories.UserCompanyRepository;
 import com.example.quarkusapi.Repositories.UserRepository;
 import com.example.quarkusapi.model.*;
@@ -44,6 +45,8 @@ public class CompanyResource
     UserRepository userRepository;
     @Inject
     UserCompanyRepository userCompanyRepository;
+    @Inject
+    CompanyRepository companyRepository;
 
     // TODO: REFATORAR ESTA MERDA SEPARANDO EM SERVICES ETC
     // TODO: ADIONAR FIELD DE TOKEN E CHECAGEM NO REDIS PARA CONVITE
@@ -59,7 +62,7 @@ public class CompanyResource
         Company companyRequest = request.getCompanyRequest();
 
         // Empresa ja existe?
-        Company existingCompany = Company.find("company_name", companyRequest.company_name).firstResult();
+        Company existingCompany = companyRepository.find("company_name", companyRequest.company_name).firstResult();
         if (existingCompany != null)
             throw new ResourceConflictException("Empresa ja existe");
 
@@ -76,7 +79,8 @@ public class CompanyResource
         // Cria empresa
         Company company = new Company();
         company.company_name = companyRequest.company_name;
-        company.persistAndFlush();
+        companyRepository.persist(company);
+        companyRepository.flush();
 
         // Cria user
         User user = new User();
@@ -120,12 +124,12 @@ public class CompanyResource
             throw new UnauthorizedException("Falha na autenticacao!");
 
         // CHECAGEM
-        Company existing_company = Company.find("company_name", req.company_name).firstResult();
+        Company existing_company = companyRepository.find("company_name", req.company_name).firstResult();
         if (existing_company != null)
             throw new ResourceConflictException("Empresa ja existe");
 
         // SALVA TRANSACTION
-        req.persist();
+        companyRepository.persist(req);
 
         return Response
         .status(Response.Status.OK)
@@ -155,7 +159,7 @@ public class CompanyResource
 
         // CHECAGEM - TODO: OTIMIZAR QUERY
         User existingUser = userRepository.find("username", req.getUsername()).firstResult();
-        Company existingCompany = Company.find("id", req.getCompany_id()).firstResult();
+        Company existingCompany = companyRepository.find("id", req.getCompany_id()).firstResult();
         if (existingUser != null || existingCompany != null)
             throw new ResourceConflictException("Usuario ou empresa ja existe");
 
@@ -225,7 +229,7 @@ public class CompanyResource
 
         // DB - QUERY - TODO: OTIMIZAR PARA MENOS QUERIES
         User user = userRepository.findById(req.id.getUserId());
-        Company company = Company.findById(req.id.getCompanyId());
+        Company company = companyRepository.findById(req.id.getCompanyId());
         if (user == null || company == null)
             throw new BadRequestException("Preencha todos os campos");
 

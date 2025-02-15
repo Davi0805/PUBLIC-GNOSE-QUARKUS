@@ -9,7 +9,11 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 @Entity
 @Table(name = "companies")
-public class Company extends PanacheEntity implements Serializable {
+public class Company implements Serializable {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    public Long id;
     
     @Column(name = "name" , nullable = false, unique = true)
     public String company_name;
