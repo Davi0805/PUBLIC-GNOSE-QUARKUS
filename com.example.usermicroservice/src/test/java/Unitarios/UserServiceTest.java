@@ -4,9 +4,11 @@ import com.example.quarkusapi.Exception.ResourceConflictException;
 import com.example.quarkusapi.Repositories.UserRepository;
 import com.example.quarkusapi.model.User;
 import com.example.quarkusapi.model.UserCompany;
+import com.example.quarkusapi.service.AuthService;
 import com.example.quarkusapi.service.RedisService;
 import com.example.quarkusapi.service.UserService;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
+import io.quarkus.redis.client.RedisClient;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -31,6 +33,9 @@ public class UserServiceTest {
 
     @InjectMock
     RedisService redisService;
+
+    @InjectMock
+    AuthService authService;
 
     private PanacheQuery<User> mockPanacheQuery(User result) {
         @SuppressWarnings("unchecked")
@@ -96,6 +101,7 @@ public class UserServiceTest {
                 .thenReturn(mockQuery);
 
         when(redisService.saveToken(anyString(), anySet())).thenReturn(true);
+        when(authService.BruteForceCheck("192.168.0.1", "test-agent")).thenReturn(0);
 
         String token = userService.login(loginRequest, "192.168.0.1", "test-agent");
 
