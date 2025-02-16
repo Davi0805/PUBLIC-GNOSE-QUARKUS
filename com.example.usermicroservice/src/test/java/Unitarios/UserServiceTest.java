@@ -88,7 +88,7 @@ public class UserServiceTest {
         when(userRepository.find("username", loginRequest.username))
                 .thenReturn(mockQuery);
 
-        String token = userService.login(loginRequest);
+        String token = userService.login(loginRequest, "192.168.0.1", "test-agent");
 
         assertNotNull(token);
     }
@@ -108,6 +108,6 @@ public class UserServiceTest {
         when(userRepository.find("username", loginRequest.username))
                 .thenReturn(mockQuery);
 
-        assertNull(userService.login(loginRequest));
+        assertNull(userService.login(loginRequest, "192.168.0.1", "test-agent"));
     }
 }
