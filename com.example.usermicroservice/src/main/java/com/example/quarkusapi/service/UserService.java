@@ -62,11 +62,11 @@ public class UserService {
         // Refactorar
         int loginAttempts = authService.BruteForceCheck(ClientIp, userAgent);
 
-        // OTIMIZACAO? GERA TOKEN ASYNCRONO
-        String token = jwtUtil.generateTokenAsync(user.username).ifNoItem().after(Duration.ofSeconds(10)).fail()
-                .onFailure(TimeoutException.class).recoverWithItem(() -> {
-                    throw new InternalServerErrorException("Token generation timed out");
-                }).await().indefinitely();
+//        // OTIMIZACAO? GERA TOKEN ASYNCRONO
+//        String token = jwtUtil.generateTokenAsync(user.username).ifNoItem().after(Duration.ofSeconds(10)).fail()
+//                .onFailure(TimeoutException.class).recoverWithItem(() -> {
+//                    throw new InternalServerErrorException("Token generation timed out");
+//                }).await().indefinitely();
 
         //validar o usuário e senha
         User foundUser = userRepository.find("username", user.username).firstResult();
@@ -78,6 +78,8 @@ public class UserService {
 
         if (foundUser.checkHashPassword(user.password)) {
             authService.RegisterAuthAttempt(ClientIp, loginAttempts);
+
+            String token = jwtUtil.generateToken(user.username);
 
             if (!(redisService.saveToken(token, foundUser.userCompanies)))
                 throw new InternalServerErrorException("Erro ao salvar token no Redis");
