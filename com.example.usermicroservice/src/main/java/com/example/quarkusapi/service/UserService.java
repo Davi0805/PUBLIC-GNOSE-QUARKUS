@@ -1,5 +1,6 @@
 package com.example.quarkusapi.service;
 
+import com.example.quarkusapi.DTO.EmailVerificationRequest;
 import com.example.quarkusapi.Exception.ResourceConflictException;
 import com.example.quarkusapi.Exception.UnauthorizedException;
 import com.example.quarkusapi.Repositories.UserRepository;
@@ -24,6 +25,9 @@ public class UserService {
     private RedisService redisService;
 
     @Inject
+    private EmailService emailService;
+
+    @Inject
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
@@ -32,12 +36,21 @@ public class UserService {
     {
         // Checa conflito com username e email
         User existingUser  = userRepository.find("username = ?1 or email = ?2", user.username, user.email).firstResult();
-        // TODO: adicionar mensagens personalizadas
         if (existingUser != null)
             throw new ResourceConflictException(existingUser.username.equals(user.username) ?
                         "Nome de usuario ja existe" : "Email ja existe");
+
+
         user.setHashPassword(user.password);
+
+
         userRepository.persist(user);
+
+        // TODO: Modificar sendgrid logic
+        // Hita Serverless func para mandar link de verificacao de email
+        String token = redisService.saveEmail(user.id);
+        emailService.sendEmailVerificationAsync(new EmailVerificationRequest(user.email, user.first_name, token))
+                .subscribe().with(ignored -> {}, failure -> {});;
     }
 
     public User getUserById(Long id) throws NotFoundException
@@ -45,6 +58,7 @@ public class UserService {
         User user = userRepository.findById(id);
         if (user == null)
             throw new NotFoundException("Usuario nao encontrado!");
+
 
         return user;
     }
