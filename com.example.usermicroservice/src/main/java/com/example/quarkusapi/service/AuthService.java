@@ -33,6 +33,25 @@ public class AuthService
 
     private static final Logger LOG = Logger.getLogger(AuthService.class);
 
+    public int BruteForceCheck(String clientIp, String userAgent)
+    {
+        try {
+            Response result = redisClient.get(prefixo + clientIp);
+            int attempts = 0;
+            if (result != null) {
+                attempts = Integer.parseInt(result.toString());
+                if (attempts >= auth_attempt) {
+                    LOG.warn("IP BLOQUEADO");
+                    return attempts;
+                }
+            }
+            return attempts;
+        } catch (Exception e) {
+            LOG.error(e);
+            throw new RuntimeException(e);
+        }
+    }
+
 
     // Feito para retornar as empresas do usuario, se existirem
     public List<RedisCompanies> check(String token, String clientIp, String userAgent)
@@ -48,6 +67,8 @@ public class AuthService
                 LOG.warn("Token nao definido");
                 return List.of();
             }
+
+            token = token.substring(7);
 
             Response result = redisClient.mget(List.of(prefixo + clientIp, token));
 
@@ -97,11 +118,12 @@ public class AuthService
             MDC.put("Auth.method", "JWT");
 
 
-            // Utiliza pipeline para fetch de duas keys ao mesmo tempo
             if(token == null) {
                 LOG.warn("Token nao definido");
                 return false;
             }
+
+            token = token.substring(7);
 
             Response result = redisClient.mget(List.of(prefixo + clientIp, token));
 
@@ -163,6 +185,9 @@ public class AuthService
                 LOG.warn("Token nao definido");
                 return false;
             }
+
+            token = token.substring(7);
+
 
             Response result = redisClient.mget(List.of(prefixo + clientIp, token));
 
