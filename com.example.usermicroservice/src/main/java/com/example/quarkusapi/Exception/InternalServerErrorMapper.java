@@ -10,7 +10,7 @@ public class InternalServerErrorMapper implements ExceptionMapper<InternalServer
     @Override
     public Response toResponse(InternalServerErrorException exception) {
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity("Forbidden: " + exception.getMessage())
+                .entity("Internal Server Error: " + exception.getMessage())
                 .build();
     }
 }
