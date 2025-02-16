@@ -79,7 +79,7 @@ public class UserResource {
 
         userService.criarUser(user);
 
-                // TODO: adicionar teste para email
+                // TODO: adicionar teste unitario para email
         // Hita Serverless func para mandar link de verificacao de email
         String token = redisService.saveEmail(user.id); // TODO: Adicionar ao User Resource para limpar
         emailService.sendEmailVerificationAsync(new EmailVerificationRequest(user.email, user.first_name, token))
@@ -92,9 +92,11 @@ public class UserResource {
     @GET
     @Path("/{id}")
     public Response buscarUser(@PathParam("id") Long id,
-                           @HeaderParam("Authorization") String token,
-                           @HeaderParam("X-Forwarded-For") String ip,
-                           @HeaderParam("User-Agent") String userAgent) {
+                               @HeaderParam("Authorization") String token,
+                               @HeaderParam("X-Forwarded-For") String ip,
+                               @HeaderParam("User-Agent") String userAgent)
+    {
+
         if (token != null)
             token = token.substring(7);
 

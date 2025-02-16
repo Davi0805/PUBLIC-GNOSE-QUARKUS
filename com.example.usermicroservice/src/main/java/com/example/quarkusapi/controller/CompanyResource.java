@@ -10,6 +10,7 @@ import com.example.quarkusapi.Repositories.UserCompanyRepository;
 import com.example.quarkusapi.Repositories.UserRepository;
 import com.example.quarkusapi.model.*;
 import com.example.quarkusapi.service.AuthService;
+import com.example.quarkusapi.service.CompanyService;
 import com.example.quarkusapi.service.EmailService;
 import com.example.quarkusapi.service.RedisService;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
@@ -48,6 +49,9 @@ public class CompanyResource
     @Inject
     CompanyRepository companyRepository;
 
+    @Inject
+    CompanyService companyService;
+
     // TODO: REFATORAR ESTA MERDA SEPARANDO EM SERVICES ETC
     // TODO: ADIONAR FIELD DE TOKEN E CHECAGEM NO REDIS PARA CONVITE
     @POST
@@ -57,45 +61,47 @@ public class CompanyResource
         if (request == null || request.getEmployeeRequest() == null || request.getCompanyRequest() == null)
             throw new BadRequestException("Preencha todos os dados validos!");
 
-        // Get do DTO
-        newEmployee employeeRequest = request.getEmployeeRequest();
-        Company companyRequest = request.getCompanyRequest();
+//        // Get do DTO
+//        newEmployee employeeRequest = request.getEmployeeRequest();
+//        Company companyRequest = request.getCompanyRequest();
+//
+//        // Empresa ja existe?
+//        Company existingCompany = companyRepository.find("company_name", companyRequest.company_name).firstResult();
+//        if (existingCompany != null)
+//            throw new ResourceConflictException("Empresa ja existe");
+//
+//
+//        // User ja existe? // CHECAR DEPOIS USERNAME E EMAIL
+//        User existingUser = userRepository.find("email",
+//                employeeRequest.getEmail()).firstResult();
+//
+//
+//        if (existingUser != null)
+//            throw new ResourceConflictException("Usuario ja existe");
+//
+//
+//        // Cria empresa
+//        Company company = new Company();
+//        company.company_name = companyRequest.company_name;
+//        companyRepository.persist(company);
+//        companyRepository.flush();
+//
+//        // Cria user
+//        User user = new User();
+//        user.fill_User(employeeRequest);
+//        userRepository.persist(user);
+//        userRepository.flush();
+//
+//        // Adiciona userid, company_id e permission na tabela de conexoes
+//        UserCompany userCompany = new UserCompany();
+//        LOG.info(user + "   |    " + company);
+//        userCompany.id = new UserCompanyId(user.id, company.id);
+//        userCompany.user = user;
+//        userCompany.company = company;
+//        userCompany.permission = "A"; // Admin permission
+//        userCompanyRepository.persist(userCompany);
 
-        // Empresa ja existe?
-        Company existingCompany = companyRepository.find("company_name", companyRequest.company_name).firstResult();
-        if (existingCompany != null)
-            throw new ResourceConflictException("Empresa ja existe");
-
-
-        // User ja existe? // CHECAR DEPOIS USERNAME E EMAIL
-        User existingUser = userRepository.find("email",
-                employeeRequest.getEmail()).firstResult();
-
-
-        if (existingUser != null)
-            throw new ResourceConflictException("Usuario ja existe");
-
-
-        // Cria empresa
-        Company company = new Company();
-        company.company_name = companyRequest.company_name;
-        companyRepository.persist(company);
-        companyRepository.flush();
-
-        // Cria user
-        User user = new User();
-        user.fill_User(employeeRequest);
-        userRepository.persist(user);
-        userRepository.flush();
-
-        // Adiciona userid, company_id e permission na tabela de conexoes
-        UserCompany userCompany = new UserCompany();
-        LOG.info(user + "   |    " + company);
-        userCompany.id = new UserCompanyId(user.id, company.id);
-        userCompany.user = user;
-        userCompany.company = company;
-        userCompany.permission = "A"; // Admin permission
-        userCompanyRepository.persist(userCompany);
+        User user = companyService.CreateUserAndEmpresa(request);
 
         // TODO: Modificar sendgrid logic
         // Hita Serverless func para mandar link de verificacao de email
@@ -123,13 +129,14 @@ public class CompanyResource
         if (!authService.checkUser(token, ip, userAgent))
             throw new UnauthorizedException("Falha na autenticacao!");
 
-        // CHECAGEM
-        Company existing_company = companyRepository.find("company_name", req.company_name).firstResult();
-        if (existing_company != null)
-            throw new ResourceConflictException("Empresa ja existe");
-
-        // SALVA TRANSACTION
-        companyRepository.persist(req);
+//        // CHECAGEM
+//        Company existing_company = companyRepository.find("company_name", req.company_name).firstResult();
+//        if (existing_company != null)
+//            throw new ResourceConflictException("Empresa ja existe");
+//
+//        // SALVA TRANSACTION
+//        companyRepository.persist(req);
+        companyService.CriarEmpresa(req);
 
         return Response
         .status(Response.Status.OK)
@@ -158,21 +165,22 @@ public class CompanyResource
             throw new UnauthorizedException("Nao faz parte dessa empresa ou nao tem permissao!");
 
         // CHECAGEM - TODO: OTIMIZAR QUERY
-        User existingUser = userRepository.find("username", req.getUsername()).firstResult();
-        Company existingCompany = companyRepository.find("id", req.getCompany_id()).firstResult();
-        if (existingUser != null || existingCompany != null)
-            throw new ResourceConflictException("Usuario ou empresa ja existe");
-
-        //TODO: OTIMIZAR QUERY
-        // DB - QUERY
-        User user_transc = new User().fill_User(req);
-        userRepository.persist(user_transc);
-
-        UserCompany relation = new UserCompany();
-        relation.user = user_transc;
-        relation.company = existingCompany;
-        relation.permission = req.getCompany_permission();
-        userCompanyRepository.persist(relation);
+//        User existingUser = userRepository.find("username", req.getUsername()).firstResult();
+//        Company existingCompany = companyRepository.find("id", req.getCompany_id()).firstResult();
+//        if (existingUser != null || existingCompany != null)
+//            throw new ResourceConflictException("Usuario ou empresa ja existe");
+//
+//        //TODO: OTIMIZAR QUERY
+//        // DB - QUERY
+//        User user_transc = new User().fill_User(req);
+//        userRepository.persist(user_transc);
+//
+//        UserCompany relation = new UserCompany();
+//        relation.user = user_transc;
+//        relation.company = existingCompany;
+//        relation.permission = req.getCompany_permission();
+//        userCompanyRepository.persist(relation);
+        companyService.CriarFuncionario(req);
 
         return Response
                     .status(Response.Status.OK)
@@ -198,9 +206,10 @@ public class CompanyResource
             throw new UnauthorizedException("Nao tem permissao para esta empresa!");
 
         // DB - QUERY
-        List<User> req = userRepository.find("company_id", company_id).page(page - 1, size).list();
-        if (req == null || req.isEmpty())
-            throw new NotFoundException("Empresa nao encontrada");
+//        List<User> req = userRepository.find("company_id", company_id).page(page - 1, size).list();
+//        if (req == null || req.isEmpty())
+//            throw new NotFoundException("Empresa nao encontrada");
+        List<User> req = companyService.findUsersByCompanyIdPageable(company_id, page, size);
 
         return Response
                 .status(Response.Status.OK)
@@ -228,20 +237,21 @@ public class CompanyResource
             throw new UnauthorizedException("Nao faz parte dessa empresa ou nao tem permissao!");
 
         // DB - QUERY - TODO: OTIMIZAR PARA MENOS QUERIES
-        User user = userRepository.findById(req.id.getUserId());
-        Company company = companyRepository.findById(req.id.getCompanyId());
-        if (user == null || company == null)
-            throw new BadRequestException("Preencha todos os campos");
-
-        // ATRIBUI
-        req.user = user;
-        req.company = company;
-
-        // CHECAGEM
-        if (req.permission == null || req.permission.isEmpty())
-            throw new BadRequestException("Permissao invalida");
-        
-        userCompanyRepository.persist(req);
+//        User user = userRepository.findById(req.id.getUserId());
+//        Company company = companyRepository.findById(req.id.getCompanyId());
+//        if (user == null || company == null)
+//            throw new BadRequestException("Preencha todos os campos");
+//
+//        // ATRIBUI
+//        req.user = user;
+//        req.company = company;
+//
+//        // CHECAGEM
+//        if (req.permission == null || req.permission.isEmpty())
+//            throw new BadRequestException("Permissao invalida");
+//
+//        userCompanyRepository.persist(req);
+        companyService.atribuirEmpresa(req);
 
         return Response.ok().entity(req).build();
     }
