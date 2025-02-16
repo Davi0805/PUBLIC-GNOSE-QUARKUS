@@ -3,6 +3,8 @@ package Unitarios;
 import com.example.quarkusapi.Exception.ResourceConflictException;
 import com.example.quarkusapi.Repositories.UserRepository;
 import com.example.quarkusapi.model.User;
+import com.example.quarkusapi.model.UserCompany;
+import com.example.quarkusapi.service.RedisService;
 import com.example.quarkusapi.service.UserService;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.test.InjectMock;
@@ -12,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -25,6 +28,9 @@ public class UserServiceTest {
 
     @InjectMock
     UserRepository userRepository;
+
+    @InjectMock
+    RedisService redisService;
 
     private PanacheQuery<User> mockPanacheQuery(User result) {
         @SuppressWarnings("unchecked")
@@ -82,15 +88,19 @@ public class UserServiceTest {
         User dbUser = new User();
         dbUser.username = "testuser";
         dbUser.emailVerified = true;
+        dbUser.userCompanies = Set.of(new UserCompany());
         dbUser.setHashPassword(loginRequest.password);
 
         PanacheQuery<User> mockQuery = mockPanacheQuery(dbUser);
         when(userRepository.find("username", loginRequest.username))
                 .thenReturn(mockQuery);
 
+        when(redisService.saveToken(anyString(), anySet())).thenReturn(true);
+
         String token = userService.login(loginRequest, "192.168.0.1", "test-agent");
 
         assertNotNull(token);
+        verify(redisService).saveToken(anyString(), anySet());
     }
 
     @Test
@@ -107,6 +117,8 @@ public class UserServiceTest {
         PanacheQuery<User> mockQuery = mockPanacheQuery(dbUser);
         when(userRepository.find("username", loginRequest.username))
                 .thenReturn(mockQuery);
+
+        when(redisService.saveToken(anyString(), anySet())).thenReturn(true);
 
         assertNull(userService.login(loginRequest, "192.168.0.1", "test-agent"));
     }
