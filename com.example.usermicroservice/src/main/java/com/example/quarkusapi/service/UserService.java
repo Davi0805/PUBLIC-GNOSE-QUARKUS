@@ -5,6 +5,7 @@ import com.example.quarkusapi.Exception.*;
 import com.example.quarkusapi.Repositories.UserRepository;
 import com.example.quarkusapi.model.User;
 import com.example.quarkusapi.utils.JwtUtils;
+import io.smallrye.mutiny.TimeoutException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.NewCookie;
@@ -62,7 +63,10 @@ public class UserService {
         int loginAttempts = authService.BruteForceCheck(ClientIp, userAgent);
 
         // OTIMIZACAO? GERA TOKEN ASYNCRONO
-        String token = jwtUtil.generateTokenAsync(user.username).await().indefinitely();
+        String token = jwtUtil.generateTokenAsync(user.username).ifNoItem().after(Duration.ofSeconds(10)).fail()
+                .onFailure(TimeoutException.class).recoverWithItem(() -> {
+                    throw new InternalServerErrorException("Token generation timed out");
+                }).await().indefinitely();
 
         //validar o usuário e senha
         User foundUser = userRepository.find("username", user.username).firstResult();
