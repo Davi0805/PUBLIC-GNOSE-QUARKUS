@@ -61,6 +61,7 @@ jobs:
           mvn package \
             -Pnative \
             -Dquarkus.native.container-build=true \
+            -DskipTests \
 
       # Conecta na ssh e FUTURAMENTE DA DEPLOY
       - name: Setup SSH
