@@ -49,6 +49,9 @@ public class User implements Serializable
         return null;
     }
 
+    public String getUsername() { return username; }
+    public String getEmail() { return email; }
+
     public boolean checkHashPassword(String passwordToCheck) {
         return BCrypt.checkpw(passwordToCheck, this.password);
     }
@@ -62,5 +65,9 @@ public class User implements Serializable
         this.last_name = req.getLast_name();
         
         return this;
+    }
+
+    public boolean checkPassword(String password) {
+        return BCrypt.checkpw(password, this.password);
     }
 }
