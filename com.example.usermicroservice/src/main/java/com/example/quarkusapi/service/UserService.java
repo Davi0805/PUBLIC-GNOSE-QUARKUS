@@ -25,9 +25,6 @@ public class UserService {
     private RedisService redisService;
 
     @Inject
-    private EmailService emailService;
-
-    @Inject
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
@@ -46,11 +43,12 @@ public class UserService {
 
         userRepository.persist(user);
 
-        // TODO: Modificar sendgrid logic
-        // Hita Serverless func para mandar link de verificacao de email
-        String token = redisService.saveEmail(user.id);
-        emailService.sendEmailVerificationAsync(new EmailVerificationRequest(user.email, user.first_name, token))
-                .subscribe().with(ignored -> {}, failure -> {});;
+
+//        // TODO: adicionar teste para email
+//        // Hita Serverless func para mandar link de verificacao de email
+//        String token = redisService.saveEmail(user.id);
+//        emailService.sendEmailVerificationAsync(new EmailVerificationRequest(user.email, user.first_name, token))
+//                .subscribe().with(ignored -> {}, failure -> {});;
     }
 
     public User getUserById(Long id) throws NotFoundException

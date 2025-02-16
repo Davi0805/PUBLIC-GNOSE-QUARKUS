@@ -1,5 +1,6 @@
 package com.example.quarkusapi.controller;
 
+import com.example.quarkusapi.DTO.EmailVerificationRequest;
 import com.example.quarkusapi.Exception.ResourceConflictException;
 import com.example.quarkusapi.Exception.UnauthorizedException;
 import com.example.quarkusapi.Repositories.UserRepository;
@@ -38,6 +39,12 @@ public class UserResource {
     @Inject
     UserService userService;
 
+    @Inject
+    EmailService emailService;
+
+    @Inject
+    RedisService redisService;
+
     // TODO: Adicionar rate limit
     @POST
     @Path("/login")
@@ -71,6 +78,12 @@ public class UserResource {
     public Response criarUser(User user) {
 
         userService.criarUser(user);
+
+                // TODO: adicionar teste para email
+        // Hita Serverless func para mandar link de verificacao de email
+        String token = redisService.saveEmail(user.id); // TODO: Adicionar ao User Resource para limpar
+        emailService.sendEmailVerificationAsync(new EmailVerificationRequest(user.email, user.first_name, token))
+                .subscribe().with(ignored -> {}, failure -> {});;
 
         // TODO: Retornar apenas dados pertinentes ao FRONTEND
         return Response.status(Response.Status.CREATED).entity(user).build();
