@@ -3,6 +3,7 @@ package com.example.quarkusapi.utils;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.auth.principal.JWTParser;
 import io.smallrye.jwt.auth.principal.ParseException;
+import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.HashSet;
@@ -23,6 +24,10 @@ public class JwtUtils {
                                         .groups(roles)
                                         .expiresIn(3600)
                                         .sign();
+    }
+
+    public Uni<String> generateTokenAsync(String username) {
+        return Uni.createFrom().item(() -> generateToken(username));
     }
 
     public String getUsernameFromToken(String token) throws ParseException {

@@ -1,17 +1,15 @@
 package com.example.quarkusapi.service;
 
 import com.example.quarkusapi.DTO.EmailVerificationRequest;
-import com.example.quarkusapi.Exception.ResourceConflictException;
-import com.example.quarkusapi.Exception.UnauthorizedException;
+import com.example.quarkusapi.Exception.*;
 import com.example.quarkusapi.Repositories.UserRepository;
 import com.example.quarkusapi.model.User;
 import com.example.quarkusapi.utils.JwtUtils;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.InternalServerErrorException;
-import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.NewCookie;
+
+import java.time.Duration;
 
 @ApplicationScoped
 public class UserService {
@@ -23,6 +21,9 @@ public class UserService {
 
     @Inject
     private RedisService redisService;
+
+    @Inject
+    private AuthService authService;
 
     @Inject
     public UserService(UserRepository userRepository) {
@@ -43,12 +44,6 @@ public class UserService {
 
         userRepository.persist(user);
 
-
-//        // TODO: adicionar teste para email
-//        // Hita Serverless func para mandar link de verificacao de email
-//        String token = redisService.saveEmail(user.id);
-//        emailService.sendEmailVerificationAsync(new EmailVerificationRequest(user.email, user.first_name, token))
-//                .subscribe().with(ignored -> {}, failure -> {});;
     }
 
     public User getUserById(Long id) throws NotFoundException
@@ -61,7 +56,14 @@ public class UserService {
         return user;
     }
     //TODO: LIMPAR CODIGO e Deixar mais seguro
-    public String login(User user) throws NotFoundException {
+    public String login(User user, String ClientIp, String userAgent) throws NotFoundException {
+
+        // Refactorar
+        int loginAttempts = authService.BruteForceCheck(ClientIp, userAgent);
+
+        // OTIMIZACAO? GERA TOKEN ASYNCRONO
+        String token = jwtUtil.generateTokenAsync(user.username).await().atMost(Duration.ofSeconds(5));
+
         //validar o usuário e senha
         User foundUser = userRepository.find("username", user.username).firstResult();
         if (foundUser == null)
@@ -71,7 +73,7 @@ public class UserService {
             throw new UnauthorizedException("Email nao verificado!");
 
         if (foundUser.checkHashPassword(user.password)) {
-            String token = jwtUtil.generateToken(user.username);
+            authService.RegisterAuthAttempt(ClientIp, loginAttempts);
 
             if (!(redisService.saveToken(token, foundUser.userCompanies)))
                 throw new InternalServerErrorException("Erro ao salvar token no Redis");

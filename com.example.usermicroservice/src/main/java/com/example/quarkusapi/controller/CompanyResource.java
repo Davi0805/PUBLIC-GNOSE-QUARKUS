@@ -61,46 +61,6 @@ public class CompanyResource
         if (request == null || request.getEmployeeRequest() == null || request.getCompanyRequest() == null)
             throw new BadRequestException("Preencha todos os dados validos!");
 
-//        // Get do DTO
-//        newEmployee employeeRequest = request.getEmployeeRequest();
-//        Company companyRequest = request.getCompanyRequest();
-//
-//        // Empresa ja existe?
-//        Company existingCompany = companyRepository.find("company_name", companyRequest.company_name).firstResult();
-//        if (existingCompany != null)
-//            throw new ResourceConflictException("Empresa ja existe");
-//
-//
-//        // User ja existe? // CHECAR DEPOIS USERNAME E EMAIL
-//        User existingUser = userRepository.find("email",
-//                employeeRequest.getEmail()).firstResult();
-//
-//
-//        if (existingUser != null)
-//            throw new ResourceConflictException("Usuario ja existe");
-//
-//
-//        // Cria empresa
-//        Company company = new Company();
-//        company.company_name = companyRequest.company_name;
-//        companyRepository.persist(company);
-//        companyRepository.flush();
-//
-//        // Cria user
-//        User user = new User();
-//        user.fill_User(employeeRequest);
-//        userRepository.persist(user);
-//        userRepository.flush();
-//
-//        // Adiciona userid, company_id e permission na tabela de conexoes
-//        UserCompany userCompany = new UserCompany();
-//        LOG.info(user + "   |    " + company);
-//        userCompany.id = new UserCompanyId(user.id, company.id);
-//        userCompany.user = user;
-//        userCompany.company = company;
-//        userCompany.permission = "A"; // Admin permission
-//        userCompanyRepository.persist(userCompany);
-
         User user = companyService.CreateUserAndEmpresa(request);
 
         // TODO: Modificar sendgrid logic
@@ -122,20 +82,11 @@ public class CompanyResource
                                   @HeaderParam("Authorization") String token,
                                   Company req)
     {
-        if (token != null)
-            token = token.substring(7);
 
         // AUTH
         if (!authService.checkUser(token, ip, userAgent))
             throw new UnauthorizedException("Falha na autenticacao!");
 
-//        // CHECAGEM
-//        Company existing_company = companyRepository.find("company_name", req.company_name).firstResult();
-//        if (existing_company != null)
-//            throw new ResourceConflictException("Empresa ja existe");
-//
-//        // SALVA TRANSACTION
-//        companyRepository.persist(req);
         companyService.CriarEmpresa(req);
 
         return Response
@@ -154,8 +105,6 @@ public class CompanyResource
                                    @HeaderParam("X-Forwarded-For") String ip,
                                    @HeaderParam("User-Agent") String userAgent)
     {
-        if (token != null)
-            token = token.substring(7);
 
         // AUTH
         List<RedisCompanies> empresas = authService.check(token, ip, userAgent);
@@ -164,22 +113,7 @@ public class CompanyResource
                         empresa.getPermission().equals("A")))
             throw new UnauthorizedException("Nao faz parte dessa empresa ou nao tem permissao!");
 
-        // CHECAGEM - TODO: OTIMIZAR QUERY
-//        User existingUser = userRepository.find("username", req.getUsername()).firstResult();
-//        Company existingCompany = companyRepository.find("id", req.getCompany_id()).firstResult();
-//        if (existingUser != null || existingCompany != null)
-//            throw new ResourceConflictException("Usuario ou empresa ja existe");
-//
-//        //TODO: OTIMIZAR QUERY
-//        // DB - QUERY
-//        User user_transc = new User().fill_User(req);
-//        userRepository.persist(user_transc);
-//
-//        UserCompany relation = new UserCompany();
-//        relation.user = user_transc;
-//        relation.company = existingCompany;
-//        relation.permission = req.getCompany_permission();
-//        userCompanyRepository.persist(relation);
+        // DB - QUERY
         companyService.CriarFuncionario(req);
 
         return Response
@@ -198,17 +132,12 @@ public class CompanyResource
                                         @PathParam("company_id") long company_id,
                                         @HeaderParam("Authorization") String token)
     {
-        if (token != null)
-            token = token.substring(7);
 
         // AUTH
         if (!authService.checkCompany(token, ip, company_id, userAgent))
             throw new UnauthorizedException("Nao tem permissao para esta empresa!");
 
         // DB - QUERY
-//        List<User> req = userRepository.find("company_id", company_id).page(page - 1, size).list();
-//        if (req == null || req.isEmpty())
-//            throw new NotFoundException("Empresa nao encontrada");
         List<User> req = companyService.findUsersByCompanyIdPageable(company_id, page, size);
 
         return Response
@@ -226,8 +155,6 @@ public class CompanyResource
                                  @HeaderParam("User-Agent") String userAgent,
                                  UserCompany req)
     {
-        if (token != null)
-            token = token.substring(7);
 
         // AUTH - TODO: LIMPAR DPS
         List<RedisCompanies> empresas = authService.check(token, ip, userAgent);
@@ -237,20 +164,6 @@ public class CompanyResource
             throw new UnauthorizedException("Nao faz parte dessa empresa ou nao tem permissao!");
 
         // DB - QUERY - TODO: OTIMIZAR PARA MENOS QUERIES
-//        User user = userRepository.findById(req.id.getUserId());
-//        Company company = companyRepository.findById(req.id.getCompanyId());
-//        if (user == null || company == null)
-//            throw new BadRequestException("Preencha todos os campos");
-//
-//        // ATRIBUI
-//        req.user = user;
-//        req.company = company;
-//
-//        // CHECAGEM
-//        if (req.permission == null || req.permission.isEmpty())
-//            throw new BadRequestException("Permissao invalida");
-//
-//        userCompanyRepository.persist(req);
         companyService.atribuirEmpresa(req);
 
         return Response.ok().entity(req).build();

@@ -49,9 +49,11 @@ public class UserResource {
     @POST
     @Path("/login")
     @Timed(name = "Post-Login", description = "Latencia para executar login", unit = MetricUnits.MILLISECONDS, absolute = true)
-    public Response login(User user)
+    public Response login(@HeaderParam("User-Agent") String userAgent,
+                          @HeaderParam("X-Forwarded-For") String ip,
+                          User user)
     {
-        String token = userService.login(user);
+        String token = userService.login(user, ip, userAgent);
 
             return Response.ok()
                 .entity("{\"token\":\"" + token + "\"}")
@@ -60,10 +62,8 @@ public class UserResource {
 
     @POST
     @Path("/logout")
-    public Response logout(@HeaderParam("Authorization") String token) {
-
-        if (token != null)
-            token = token.substring(7);
+    public Response logout(@HeaderParam("Authorization") String token)
+    {
 
         userService.logout(token);
 
@@ -75,7 +75,8 @@ public class UserResource {
 
     @POST
     @Transactional
-    public Response criarUser(User user) {
+    public Response criarUser(User user)
+    {
 
         userService.criarUser(user);
 
@@ -96,9 +97,6 @@ public class UserResource {
                                @HeaderParam("X-Forwarded-For") String ip,
                                @HeaderParam("User-Agent") String userAgent)
     {
-
-        if (token != null)
-            token = token.substring(7);
 
         User user = userService.getUserById(id);
 
