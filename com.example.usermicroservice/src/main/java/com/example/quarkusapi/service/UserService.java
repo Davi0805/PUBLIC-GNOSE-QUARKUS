@@ -62,7 +62,7 @@ public class UserService {
         int loginAttempts = authService.BruteForceCheck(ClientIp, userAgent);
 
         // OTIMIZACAO? GERA TOKEN ASYNCRONO
-        String token = jwtUtil.generateTokenAsync(user.username).await().atMost(Duration.ofSeconds(5));
+        String token = jwtUtil.generateTokenAsync(user.username).await().atMost(Duration.ofSeconds(10));
 
         //validar o usuário e senha
         User foundUser = userRepository.find("username", user.username).firstResult();
