@@ -43,6 +43,17 @@ jobs:
         working-directory: ./com.example.usermicroservice
         run: mvn clean package -DskipTests
 
+      - name: Run Tests
+        working-directory: ./com.example.usermicroservice
+        run: >
+            mvn test 
+            -Dquarkus.log.file.path=/tmp/app-test.log 
+            -Dquarkus.datasource.db-kind=h2 
+            "-Dquarkus.datasource.jdbc.url=jdbc:h2:mem:test_db;DB_CLOSE_DELAY=-1" 
+            -Dquarkus.datasource.username=sa 
+            -Dquarkus.datasource.password=sa 
+            -Dquarkus.hibernate-orm.database.generation=drop-and-create
+
       # Build
       - name: Build Native Image
         working-directory: ./com.example.usermicroservice
