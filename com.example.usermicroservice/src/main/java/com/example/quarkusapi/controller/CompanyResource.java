@@ -100,7 +100,7 @@ public class CompanyResource
         // TODO: Modificar sendgrid logic
         // Hita Serverless func para mandar link de verificacao de email
         String token = redisService.saveEmail(user.id);
-        emailService.sendEmailVerificationAsync(new EmailVerificationRequest(user.email, user.first_name, redisService.saveEmail(user.id)))
+        emailService.sendEmailVerificationAsync(new EmailVerificationRequest(user.email, user.first_name, token))
                 .subscribe().with(ignored -> {}, failure -> {});;
 
         return Response
