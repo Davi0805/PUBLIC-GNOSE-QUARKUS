@@ -63,6 +63,17 @@ jobs:
             -Dquarkus.native.container-build=true \
             -DskipTests \
 
+      - name: Run Integration Tests
+        working-directory: ./com.example.usermicroservice
+        run: |
+          mvn failsafe:integration-test \
+            -Dquarkus.log.file.path=/tmp/app-test.log \
+            -Dquarkus.datasource.db-kind=h2 \
+            "-Dquarkus.datasource.jdbc.url=jdbc:h2:mem:test_db;DB_CLOSE_DELAY=-1" \
+            -Dquarkus.datasource.username=sa \
+            -Dquarkus.datasource.password=sa \
+            -Dquarkus.hibernate-orm.database.generation=drop-and-create
+
       # Conecta na ssh e FUTURAMENTE DA DEPLOY
       - name: Setup SSH
         run: |

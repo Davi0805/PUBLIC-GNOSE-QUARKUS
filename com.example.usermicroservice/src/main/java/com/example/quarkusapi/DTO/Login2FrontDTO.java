@@ -1,9 +1,13 @@
 package com.example.quarkusapi.DTO;
 
 import com.example.quarkusapi.model.RedisCompanies;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
 import java.util.List;
 
+@RegisterForReflection
 public class Login2FrontDTO {
 
     private String token;
@@ -13,7 +17,8 @@ public class Login2FrontDTO {
     public Login2FrontDTO() {
     }
 
-    public Login2FrontDTO(String token, List<RedisCompanies> companies) {
+    @JsonCreator
+    public Login2FrontDTO(@JsonProperty("token") String token, @JsonProperty("companies") List<RedisCompanies> companies) {
         this.token = token;
         this.companies = companies;
     }
