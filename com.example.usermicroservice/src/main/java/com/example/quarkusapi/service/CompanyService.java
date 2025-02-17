@@ -1,5 +1,6 @@
 package com.example.quarkusapi.service;
 
+import com.example.quarkusapi.DTO.AtribEmpresaDTO;
 import com.example.quarkusapi.DTO.CreateUserAdminRequestDTO;
 import com.example.quarkusapi.Repositories.CompanyRepository;
 import com.example.quarkusapi.Repositories.UserCompanyRepository;
@@ -34,21 +35,25 @@ public class CompanyService {
         return req;
     }
 
-    public void atribuirEmpresa(UserCompany req) throws BadRequestException{
-        User user = userRepository.findById(req.id.getUserId());
-        Company company = companyRepository.findById(req.id.getCompanyId());
+    // TODO: PROCURAR POR USERNAME TBM
+    public void atribuirEmpresa(AtribEmpresaDTO req) throws BadRequestException{
+        User user = userRepository.find("email = ?1", req.getEmail()).firstResult();
+        Company company = companyRepository.findById(req.getCompanyId());
         if (user == null || company == null)
             throw new BadRequestException("Preencha todos os campos");
 
-        // ATRIBUI
-        req.user = user;
-        req.company = company;
-
         // CHECAGEM
-        if (req.permission == null || req.permission.isEmpty())
+        if (req.getPermission() == null || req.getPermission().length() != 1)
             throw new BadRequestException("Permissao invalida");
 
-        userCompanyRepository.persist(req);
+        UserCompany relation = new UserCompany();
+
+        // ATRIBUI
+        relation.id = new UserCompanyId(user.id, company.id);
+        relation.user = user;
+        relation.company = company;
+
+        userCompanyRepository.persist(relation);
     }
 
     public void CriarFuncionario(newEmployee req) throws ResourceConflictException {

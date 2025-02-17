@@ -1,5 +1,6 @@
 package com.example.quarkusapi.controller;
 
+import com.example.quarkusapi.DTO.AtribEmpresaDTO;
 import com.example.quarkusapi.DTO.CreateUserAdminRequestDTO;
 import com.example.quarkusapi.DTO.EmailVerificationRequest;
 import com.example.quarkusapi.Exception.BadRequestException;
@@ -98,10 +99,9 @@ public class CompanyResource
         // DB - QUERY
         companyService.CriarFuncionario(req);
 
-        return Response
-                    .status(Response.Status.OK)
-                    .entity("Usuario criado com sucesso!")
-                    .build();
+        return Response.status(Response.Status.OK)
+                                .entity("Usuario criado com sucesso!")
+                                .build();
     }
 
     @GET
@@ -135,12 +135,12 @@ public class CompanyResource
     public Response add_employee(@HeaderParam("Authorization") String token,
                                  @HeaderParam("X-Forwarded-For") String ip,
                                  @HeaderParam("User-Agent") String userAgent,
-                                 UserCompany req)
+                                 AtribEmpresaDTO req)
     {
 
         // AUTH - TODO: LIMPAR DPS
         List<RedisCompanies> empresas = authService.check(token, ip, userAgent);
-        authService.checkCompanyPermission(empresas, req.id.getCompanyId());
+        authService.checkCompanyPermission(empresas, req.getCompanyId());
 
         // DB - QUERY - TODO: OTIMIZAR PARA MENOS QUERIES
         companyService.atribuirEmpresa(req);
