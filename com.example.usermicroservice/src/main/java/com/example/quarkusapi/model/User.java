@@ -49,6 +49,17 @@ public class User implements Serializable
         return null;
     }
 
+    @Override
+    public String toString()
+    {
+        return "User{" +
+                "id=" + id +
+                ", username='" + username + '\'' +
+                ", first_name='" + first_name + '\'' +
+                ", last_name='" + last_name + '\'' +
+                '}';
+    }
+
     public String getUsername() { return username; }
     public String getEmail() { return email; }
 

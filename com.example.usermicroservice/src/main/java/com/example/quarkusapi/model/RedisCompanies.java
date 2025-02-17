@@ -46,6 +46,11 @@ public class RedisCompanies {
         private long userId;
         private long companyId;
 
+        public Id(Long userId, Long companyId) {
+            this.userId = userId;
+            this.companyId = companyId;
+        }
+
         public long getUserId() {
             return userId;
         }

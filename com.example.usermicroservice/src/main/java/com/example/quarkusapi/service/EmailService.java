@@ -22,6 +22,9 @@ public class EmailService {
     @ConfigProperty(name = "email.verification.url")
     String FUNCTION_URL;
 
+    @Inject
+    RedisService redisService;
+
     private static final Logger LOGGER = Logger.getLogger(EmailService.class.getName());
 
     // Transformar em Async depois
@@ -31,6 +34,8 @@ public class EmailService {
         MDC.put("emailAddress", req.getEmail());
         MDC.put("name", req.getName());
 
+        String token = redisService.saveEmail(req.getId());
+
         // TODO: Substituir por DTO DEPOIS
         String payload = String.format("""
         {
@@ -38,7 +43,7 @@ public class EmailService {
             "name": "%s",
             "token": "%s"
         }
-    """, req.getEmail(), req.getName(), req.getToken());
+    """, req.getEmail(), req.getName(), token);
 
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()

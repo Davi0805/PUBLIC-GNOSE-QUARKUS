@@ -1,7 +1,9 @@
 package Unitarios;
 
+import com.example.quarkusapi.DTO.Login2FrontDTO;
 import com.example.quarkusapi.Exception.ResourceConflictException;
 import com.example.quarkusapi.Repositories.UserRepository;
+import com.example.quarkusapi.model.Company;
 import com.example.quarkusapi.model.User;
 import com.example.quarkusapi.model.UserCompany;
 import com.example.quarkusapi.service.AuthService;
@@ -17,6 +19,8 @@ import org.mockito.Mockito;
 
 import java.util.Optional;
 import java.util.Set;
+
+import com.example.quarkusapi.model.UserCompanyId;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -36,6 +40,19 @@ public class UserServiceTest {
 
     @InjectMock
     AuthService authService;
+
+    private UserCompany mockUserCompany(long userId, long companyId, String permission) {
+        UserCompany userCompany = new UserCompany();
+        userCompany.id = new UserCompanyId();
+        userCompany.id.userId = userId;
+        userCompany.id.companyId = companyId;
+        userCompany.user = new User();
+        userCompany.user.id = userId;
+        userCompany.company = new Company();
+        userCompany.company.id = companyId;
+        userCompany.permission = permission;
+        return userCompany;
+    }
 
     private PanacheQuery<User> mockPanacheQuery(User result) {
         @SuppressWarnings("unchecked")
@@ -93,7 +110,7 @@ public class UserServiceTest {
         User dbUser = new User();
         dbUser.username = "testuser";
         dbUser.emailVerified = true;
-        dbUser.userCompanies = Set.of(new UserCompany());
+        dbUser.userCompanies = Set.of(mockUserCompany(1L, 1L, "A"));
         dbUser.setHashPassword(loginRequest.password);
 
         PanacheQuery<User> mockQuery = mockPanacheQuery(dbUser);
@@ -103,9 +120,9 @@ public class UserServiceTest {
         when(redisService.saveToken(anyString(), anySet())).thenReturn(true);
         when(authService.BruteForceCheck("192.168.0.1", "test-agent")).thenReturn(0);
 
-        String token = userService.login(loginRequest, "192.168.0.1", "test-agent");
+        Login2FrontDTO data = userService.login(loginRequest, "192.168.0.1", "test-agent");
 
-        assertNotNull(token);
+        assertNotNull(data.getToken());
         verify(redisService).saveToken(anyString(), anySet());
     }
 

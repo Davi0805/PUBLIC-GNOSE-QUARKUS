@@ -1,9 +1,12 @@
 package com.example.quarkusapi.service;
 
 import com.example.quarkusapi.DTO.EmailVerificationRequest;
+import com.example.quarkusapi.DTO.Login2FrontDTO;
 import com.example.quarkusapi.Exception.*;
 import com.example.quarkusapi.Repositories.UserRepository;
+import com.example.quarkusapi.model.RedisCompanies;
 import com.example.quarkusapi.model.User;
+import com.example.quarkusapi.model.UserCompany;
 import com.example.quarkusapi.utils.JwtUtils;
 import io.smallrye.mutiny.TimeoutException;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -11,6 +14,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.core.NewCookie;
 
 import java.time.Duration;
+import java.util.List;
 
 @ApplicationScoped
 public class UserService {
@@ -57,7 +61,7 @@ public class UserService {
         return user;
     }
     //TODO: LIMPAR CODIGO e Deixar mais seguro
-    public String login(User user, String ClientIp, String userAgent) throws NotFoundException {
+    public Login2FrontDTO login(User user, String ClientIp, String userAgent) throws NotFoundException {
 
         // Refactorar
         int loginAttempts = authService.BruteForceCheck(ClientIp, userAgent);
@@ -84,16 +88,13 @@ public class UserService {
             if (!(redisService.saveToken(token, foundUser.userCompanies)))
                 throw new InternalServerErrorException("Erro ao salvar token no Redis");
 
-//            NewCookie securecookie = new NewCookie.Builder("AUTH_TOKEN")
-//                    .value(token)
-//                    //.path("/")
-//                    .httpOnly(false)
-//                    .secure(false) // https
-//                    .maxAge(7200)
-//                    .sameSite(NewCookie.SameSite.NONE)
-//                    .build();
+            List<RedisCompanies> companies = foundUser.userCompanies.stream()
+                    .map(uc -> new RedisCompanies(new RedisCompanies.Id(uc.id.getUserId(), uc.id.getCompanyId()), uc.permission))
+                    .toList();
 
-            return token;
+
+
+            return new Login2FrontDTO(token, companies);
         }
         return null;
     }

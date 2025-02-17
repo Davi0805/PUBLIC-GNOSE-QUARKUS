@@ -1,5 +1,6 @@
 package com.example.quarkusapi.service;
 
+import com.example.quarkusapi.Exception.UnauthorizedException;
 import com.example.quarkusapi.model.RedisCompanies;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -216,6 +217,21 @@ public class AuthService
         } catch (Exception e) {
             LOG.error(e);
             throw new RuntimeException(e);
+        }
+    }
+
+    public void checkCompanyPermission(List<RedisCompanies> empresas, long companyId) throws UnauthorizedException {
+        if (empresas.stream().noneMatch(empresa ->
+                empresa.getId().getCompanyId() == companyId &&
+                        empresa.getPermission().equals("A"))) {
+            throw new UnauthorizedException("Nao faz parte dessa empresa ou nao tem permissao!");
+        }
+    }
+
+    public void checkEqualUser(List<RedisCompanies> empresas, long userId) throws UnauthorizedException {
+        if (empresas.stream().noneMatch(empresa ->
+                empresa.getId().getUserId() == userId)) {
+            throw new UnauthorizedException("Nao faz parte dessa empresa ou nao tem permissao!");
         }
     }
 }

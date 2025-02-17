@@ -1,6 +1,7 @@
 package com.example.quarkusapi.controller;
 
 import com.example.quarkusapi.DTO.EmailVerificationRequest;
+import com.example.quarkusapi.DTO.Login2FrontDTO;
 import com.example.quarkusapi.Exception.ResourceConflictException;
 import com.example.quarkusapi.Exception.UnauthorizedException;
 import com.example.quarkusapi.Repositories.UserRepository;
@@ -42,10 +43,6 @@ public class UserResource {
     @Inject
     EmailService emailService;
 
-    @Inject
-    RedisService redisService;
-
-    // TODO: Adicionar rate limit
     @POST
     @Path("/login")
     @Timed(name = "Post-Login", description = "Latencia para executar login", unit = MetricUnits.MILLISECONDS, absolute = true)
@@ -53,10 +50,11 @@ public class UserResource {
                           @HeaderParam("X-Forwarded-For") String ip,
                           User user)
     {
-        String token = userService.login(user, ip, userAgent);
+
+        Login2FrontDTO data = userService.login(user, ip, userAgent);
 
             return Response.ok()
-                .entity("{\"token\":\"" + token + "\"}")
+                .entity(data)
                 .build();
     }
 
@@ -80,14 +78,10 @@ public class UserResource {
 
         userService.criarUser(user);
 
-        // TODO: adicionar teste unitario para email
-        // Hita Serverless func para mandar link de verificacao de email
-        String token = redisService.saveEmail(user.id); // TODO: Adicionar ao User Resource para limpar
-        emailService.sendEmailVerificationAsync(new EmailVerificationRequest(user.email, user.first_name, token))
+        emailService.sendEmailVerificationAsync(new EmailVerificationRequest(user.email, user.first_name, user.id))
                 .subscribe().with(ignored -> {}, failure -> {});;
 
-        // TODO: Retornar apenas dados pertinentes ao FRONTEND
-        return Response.status(Response.Status.CREATED).entity(user).build();
+        return Response.status(Response.Status.CREATED).entity(user.toString()).build();
     }
 
     @GET
@@ -102,9 +96,7 @@ public class UserResource {
 
         // AUTH
         List<RedisCompanies> empresas = authService.check(token, ip, userAgent);
-        if (empresas.stream().noneMatch(empresa ->
-                empresa.getId().getUserId() == user.id))
-            throw new UnauthorizedException("Nao faz parte dessa empresa ou nao tem permissao!");
+        authService.checkEqualUser(empresas, user.id);
 
         return Response.ok(user).build();
     }

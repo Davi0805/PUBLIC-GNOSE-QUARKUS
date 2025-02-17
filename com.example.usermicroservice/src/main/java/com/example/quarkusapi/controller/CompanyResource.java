@@ -37,41 +37,26 @@ public class CompanyResource
     private static final Logger LOG = Logger.getLogger(CompanyResource.class);
 
     @Inject
-    RedisService redisService;
-    @Inject
     EmailService emailService;
     @Inject
     AuthService authService;
     @Inject
-    UserRepository userRepository;
-    @Inject
-    UserCompanyRepository userCompanyRepository;
-    @Inject
-    CompanyRepository companyRepository;
-
-    @Inject
     CompanyService companyService;
 
-    // TODO: REFATORAR ESTA MERDA SEPARANDO EM SERVICES ETC
     // TODO: ADIONAR FIELD DE TOKEN E CHECAGEM NO REDIS PARA CONVITE
     @POST
     @Path("/create_user_admin")
     @Transactional
     public Response createUserAndAssignAdmin(@Valid CreateUserAdminRequestDTO request) {
-        if (request == null || request.getEmployeeRequest() == null || request.getCompanyRequest() == null)
-            throw new BadRequestException("Preencha todos os dados validos!");
 
         User user = companyService.CreateUserAndEmpresa(request);
 
-        // TODO: Modificar sendgrid logic
-        // Hita Serverless func para mandar link de verificacao de email
-        String token = redisService.saveEmail(user.id);
-        emailService.sendEmailVerificationAsync(new EmailVerificationRequest(user.email, user.first_name, token))
+        emailService.sendEmailVerificationAsync(new EmailVerificationRequest(user.email, user.first_name, user.id))
                 .subscribe().with(ignored -> {}, failure -> {});;
 
         return Response
                 .status(Response.Status.CREATED)
-                .entity("User and company created successfully, and user assigned as admin.")
+                .entity("Usuario e empresa criada!")
                 .build();
     }
 
@@ -108,10 +93,7 @@ public class CompanyResource
 
         // AUTH
         List<RedisCompanies> empresas = authService.check(token, ip, userAgent);
-        if (empresas.stream().noneMatch(empresa ->
-                empresa.getId().getCompanyId() == req.getCompany_id() &&
-                        empresa.getPermission().equals("A")))
-            throw new UnauthorizedException("Nao faz parte dessa empresa ou nao tem permissao!");
+        authService.checkCompanyPermission(empresas, req.getCompany_id());
 
         // DB - QUERY
         companyService.CriarFuncionario(req);
@@ -158,10 +140,7 @@ public class CompanyResource
 
         // AUTH - TODO: LIMPAR DPS
         List<RedisCompanies> empresas = authService.check(token, ip, userAgent);
-        if (empresas.stream().noneMatch(empresa ->
-                empresa.getId().getCompanyId() == req.id.getCompanyId() &&
-                        empresa.getPermission().equals("A")))
-            throw new UnauthorizedException("Nao faz parte dessa empresa ou nao tem permissao!");
+        authService.checkCompanyPermission(empresas, req.id.getCompanyId());
 
         // DB - QUERY - TODO: OTIMIZAR PARA MENOS QUERIES
         companyService.atribuirEmpresa(req);
