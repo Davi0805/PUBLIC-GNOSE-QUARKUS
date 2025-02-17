@@ -73,7 +73,8 @@ public class UserService {
 //                }).await().indefinitely();
 
         //validar o usuário e senha
-        User foundUser = userRepository.find("username", user.username).firstResult();
+        //User foundUser = userRepository.find("username", user.username).firstResult();
+        User foundUser = userRepository.findUserWithCompanies(user.username);
         if (foundUser == null)
             throw new BadRequestException("User nao encontrado");
 
@@ -89,7 +90,7 @@ public class UserService {
                 throw new InternalServerErrorException("Erro ao salvar token no Redis");
 
             List<RedisCompanies> companies = foundUser.userCompanies.stream()
-                    .map(uc -> new RedisCompanies(new RedisCompanies.Id(uc.id.getUserId(), uc.id.getCompanyId()), uc.permission))
+                    .map(uc -> new RedisCompanies(new RedisCompanies.Id(uc.id.getUserId(), uc.id.getCompanyId()), uc.permission, uc.company.company_name))
                     .toList();
 
 

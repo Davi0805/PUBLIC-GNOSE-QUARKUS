@@ -8,14 +8,17 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 public class RedisCompanies {
     private Id id;
     private String permission;
+    private String companyName;
 
     @JsonCreator
     public RedisCompanies(
             @JsonProperty("id") Id id,
-            @JsonProperty("permission") String permission)
+            @JsonProperty("permission") String permission,
+            @JsonProperty("companyName") String companyName)
     {
         this.id = id;
         this.permission = permission;
+        this.companyName = companyName;
     }
 
     public Id getId() {
@@ -34,11 +37,20 @@ public class RedisCompanies {
         this.permission = permission;
     }
 
+    public String getCompanyName() {
+        return companyName;
+    }
+
+    public void setCompanyName(String companyName) {
+        this.companyName = companyName;
+    }
+
     @Override
     public String toString() {
         return "RedisCompanies{" +
                 "id=" + id +
                 ", permission='" + permission + '\'' +
+                ", companyName='" + companyName + '\'' +
                 '}';
     }
 

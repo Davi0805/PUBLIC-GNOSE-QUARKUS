@@ -113,9 +113,7 @@ public class UserServiceTest {
         dbUser.userCompanies = Set.of(mockUserCompany(1L, 1L, "A"));
         dbUser.setHashPassword(loginRequest.password);
 
-        PanacheQuery<User> mockQuery = mockPanacheQuery(dbUser);
-        when(userRepository.find("username", loginRequest.username))
-                .thenReturn(mockQuery);
+        when(userRepository.findUserWithCompanies(loginRequest.username)).thenReturn(dbUser);
 
         when(redisService.saveToken(anyString(), anySet())).thenReturn(true);
         when(authService.BruteForceCheck("192.168.0.1", "test-agent")).thenReturn(0);
@@ -137,9 +135,8 @@ public class UserServiceTest {
         dbUser.emailVerified = true;
         dbUser.setHashPassword("correctpassword");
 
-        PanacheQuery<User> mockQuery = mockPanacheQuery(dbUser);
-        when(userRepository.find("username", loginRequest.username))
-                .thenReturn(mockQuery);
+        when(userRepository.findUserWithCompanies(loginRequest.username)).thenReturn(dbUser);
+
 
         when(redisService.saveToken(anyString(), anySet())).thenReturn(true);
 
