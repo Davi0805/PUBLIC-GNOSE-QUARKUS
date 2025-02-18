@@ -52,6 +52,7 @@ public class CompanyService {
         relation.id = new UserCompanyId(user.id, company.id);
         relation.user = user;
         relation.company = company;
+        relation.permission = req.getPermission();
 
         userCompanyRepository.persist(relation);
     }
