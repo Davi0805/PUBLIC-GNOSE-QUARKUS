@@ -24,6 +24,7 @@ public class newEmployee implements Serializable
         this.last_name = last_name;
         this.company_id = company_id;
         this.company_permission = company_permission;
+        this.termos_e_condicoes = false;
     }
 
     @NotEmpty(message = "Preencha todos os campos!")
@@ -47,6 +48,10 @@ public class newEmployee implements Serializable
     private String last_name;
 
     private Long company_id;
+
+    private boolean termos_e_condicoes = false;
+
+    public boolean getTermos_e_condicoes() { return termos_e_condicoes; }
 
     @NotEmpty(message = "Preencha todos os campos!")
     @Size(max = 1, message = "Permissao invalida!")

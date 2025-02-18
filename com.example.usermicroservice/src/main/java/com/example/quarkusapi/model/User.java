@@ -74,6 +74,7 @@ public class User implements Serializable
         this.email = req.getEmail();
         this.first_name = req.getFirst_name();
         this.last_name = req.getLast_name();
+        this.termos_e_condicoes = req.getTermos_e_condicoes();
         
         return this;
     }
