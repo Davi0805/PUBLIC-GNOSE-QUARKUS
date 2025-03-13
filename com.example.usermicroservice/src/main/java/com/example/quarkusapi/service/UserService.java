@@ -11,7 +11,9 @@ import com.example.quarkusapi.utils.JwtUtils;
 import io.smallrye.mutiny.TimeoutException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.PersistenceException;
 import jakarta.ws.rs.core.NewCookie;
+import org.hibernate.exception.ConstraintViolationException;
 
 import java.time.Duration;
 import java.util.List;
@@ -37,18 +39,14 @@ public class UserService {
 
     public void criarUser(User user) throws ResourceConflictException
     {
-        // Checa conflito com username e email
-        User existingUser  = userRepository.find("username = ?1 or email = ?2", user.username, user.email).firstResult();
-        if (existingUser != null)
-            throw new ResourceConflictException(existingUser.username.equals(user.username) ?
-                        "Nome de usuario ja existe" : "Email ja existe");
-
-
-        user.setHashPassword(user.password);
-
-
-        userRepository.persist(user);
-
+        try{
+            user.setHashPassword(user.password);
+            userRepository.persist(user);
+        } catch (PersistenceException e) {
+            if (e.getCause() instanceof ConstraintViolationException)
+                throw new ResourceConflictException("Usuario ja existe");
+            throw new InternalServerErrorException("Erro ao criar usuario");
+        }
     }
 
     public User getUserById(Long id) throws NotFoundException
@@ -56,7 +54,6 @@ public class UserService {
         User user = userRepository.findById(id);
         if (user == null)
             throw new NotFoundException("Usuario nao encontrado!");
-
 
         return user;
     }
