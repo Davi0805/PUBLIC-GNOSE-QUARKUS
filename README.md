@@ -2,7 +2,7 @@
 
 ## Overview
 
-**PUBLIC-GNOSE-QUARKUS** is a prototype of a **User Microservice** for an **ERP application**, developed with **Java**, **Quarkus**, **Docker**, **Redis**, **PostgreSQL**, and **JWT** for authentication. The microservice is designed to manage user data, handle authentication, and interact with other ERP components.
+**PUBLIC-GNOSE-QUARKUS** is a prototype of a **User Microservice** for an **ERP application** with the objective of handling many companies at once. It was developed with **Java**, **Quarkus**, **Docker**, **Redis**, **PostgreSQL**, and **JWT** for authentication. The microservice is designed to manage user data, handle authentication, and interact with other ERP components.
 
 ## Architecture and Patterns
 
