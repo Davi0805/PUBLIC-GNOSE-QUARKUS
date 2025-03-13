@@ -8,6 +8,7 @@ import com.example.quarkusapi.model.RedisCompanies;
 import com.example.quarkusapi.model.User;
 import com.example.quarkusapi.model.UserCompany;
 import com.example.quarkusapi.utils.JwtUtils;
+import io.quarkus.logging.Log;
 import io.smallrye.mutiny.TimeoutException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -45,7 +46,11 @@ public class UserService {
         } catch (PersistenceException e) {
             if (e.getCause() instanceof ConstraintViolationException)
                 throw new ResourceConflictException("Usuario ja existe");
+            Log.error(e.getCause());
             throw new InternalServerErrorException("Erro ao criar usuario");
+        } catch (Exception e) {
+            Log.error(e.getCause());
+            throw new InternalServerErrorException("Erro inesperado ao criar usuario");
         }
     }
 
@@ -63,14 +68,6 @@ public class UserService {
         // Refactorar
         int loginAttempts = authService.BruteForceCheck(ClientIp, userAgent);
 
-//        // OTIMIZACAO? GERA TOKEN ASYNCRONO
-//        String token = jwtUtil.generateTokenAsync(user.username).ifNoItem().after(Duration.ofSeconds(10)).fail()
-//                .onFailure(TimeoutException.class).recoverWithItem(() -> {
-//                    throw new InternalServerErrorException("Token generation timed out");
-//                }).await().indefinitely();
-
-        //validar o usuário e senha
-        //User foundUser = userRepository.find("username", user.username).firstResult();
         User foundUser = userRepository.findUserWithCompanies(user.username);
         if (foundUser == null)
             throw new BadRequestException("User nao encontrado");
@@ -87,8 +84,11 @@ public class UserService {
                 throw new InternalServerErrorException("Erro ao salvar token no Redis");
 
             List<RedisCompanies> companies = foundUser.userCompanies.stream()
-                    .map(uc -> new RedisCompanies(new RedisCompanies.Id(uc.id.getUserId(), uc.id.getCompanyId()), uc.permission, uc.company.company_name))
-                    .toList();
+                    .map(uc -> new RedisCompanies(new RedisCompanies.Id(uc.id.getUserId(),
+                                                                uc.id.getCompanyId()),
+                                                                uc.permission,
+                                                                uc.company.company_name))
+                                                                .toList();
 
 
 
