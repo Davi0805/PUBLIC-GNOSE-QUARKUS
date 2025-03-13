@@ -14,6 +14,8 @@ import io.quarkus.redis.client.RedisClient;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import jakarta.persistence.PersistenceException;
+import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -90,15 +92,15 @@ public class UserServiceTest {
         existingUser.username = "existinguser";
         existingUser.email = "existing@test.com";
 
-        PanacheQuery<User> mockQuery = mockPanacheQuery(existingUser);
-        when(userRepository.find("username = ?1 or email = ?2", newUser.username, newUser.email))
-                .thenReturn(mockQuery);
+        doThrow(new PersistenceException(new ConstraintViolationException("Duplicate entry", null, null)))
+                .when(userRepository).persist(any(User.class));
+
 
         ResourceConflictException exception = assertThrows(ResourceConflictException.class,
                 () -> userService.criarUser(newUser));
 
-        assertEquals("Nome de usuario ja existe", exception.getMessage());
-        verify(userRepository, never()).persist(any(User.class));
+        assertEquals("Usuario ja existe", exception.getMessage());
+        verify(userRepository).persist(any(User.class));
     }
 
     @Test
