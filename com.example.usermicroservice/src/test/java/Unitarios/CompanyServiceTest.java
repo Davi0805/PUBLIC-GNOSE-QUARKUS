@@ -14,7 +14,9 @@ import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import jakarta.persistence.PersistenceException;
 import jakarta.ws.rs.NotFoundException;
+import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -216,5 +218,20 @@ public class CompanyServiceTest {
         verify(companyRepository).persist(any(Company.class));
         verify(userRepository).persist(any(User.class));
         verify(userCompanyRepository).persist(any(UserCompany.class));
+    }
+
+    @Test
+    void shouldThrowWhenCompanyNameDuplicate() {
+        Company newCompany = new Company();
+        newCompany.company_name = "Existing Company";
+
+        doThrow(new PersistenceException(new ConstraintViolationException("Duplicate entry", null, null)))
+                .when(companyRepository).persist(any(Company.class));
+
+        ResourceConflictException exception = assertThrows(ResourceConflictException.class,
+                () -> companyService.CriarEmpresa(newCompany));
+
+        assertEquals("Empresa ja existe", exception.getMessage());
+        verify(companyRepository).persist(any(Company.class));
     }
 }

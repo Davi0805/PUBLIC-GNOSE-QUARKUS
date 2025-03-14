@@ -11,6 +11,12 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 @Table(name = "companies")
 public class Company implements Serializable {
 
+    public Company() {}
+
+    public Company(String company_name) {
+        this.company_name = company_name;
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     public Long id;

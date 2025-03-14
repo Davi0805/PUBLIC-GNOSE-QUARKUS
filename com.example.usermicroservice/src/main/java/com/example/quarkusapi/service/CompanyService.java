@@ -6,12 +6,15 @@ import com.example.quarkusapi.Repositories.CompanyRepository;
 import com.example.quarkusapi.Repositories.UserCompanyRepository;
 import com.example.quarkusapi.Repositories.UserRepository;
 import com.example.quarkusapi.model.*;
+import com.example.quarkusapi.Exception.*;
+import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.Id;
+import jakarta.persistence.PersistenceException;
 import jakarta.ws.rs.NotFoundException;
 import com.example.quarkusapi.Exception.*;
-
+import org.hibernate.exception.ConstraintViolationException;
 
 
 import java.util.List;
@@ -35,94 +38,107 @@ public class CompanyService {
         return req;
     }
 
-    // TODO: PROCURAR POR USERNAME TBM
     public void atribuirEmpresa(AtribEmpresaDTO req) throws BadRequestException{
         User user = userRepository.find("email = ?1", req.getEmail()).firstResult();
         Company company = companyRepository.findById(req.getCompanyId());
         if (user == null || company == null)
             throw new BadRequestException("Preencha todos os campos");
-
-        // CHECAGEM
-        if (req.getPermission() == null || req.getPermission().length() != 1)
+        else if (req.getPermission() == null || req.getPermission().length() != 1)
             throw new BadRequestException("Permissao invalida");
 
-        UserCompany relation = new UserCompany();
+        UserCompany relation = new UserCompany(new UserCompanyId(user.id, company.id), user, company, req.getPermission());
 
-        // ATRIBUI
-        relation.id = new UserCompanyId(user.id, company.id);
-        relation.user = user;
-        relation.company = company;
-        relation.permission = req.getPermission();
-
-        userCompanyRepository.persist(relation);
+        try {
+            userCompanyRepository.persist(relation);
+        } catch (PersistenceException e) {
+            Log.error(e.getCause());
+            throw new ResourceConflictException("Usuario ja esta vinculado a empresa");
+        } catch (Exception e) {
+            Log.error(e.getCause());
+            throw new InternalServerErrorException("Erro inesperado ao atribuir empresa");
+        }
     }
 
     public void CriarFuncionario(newEmployee req) throws ResourceConflictException {
 
-        // TODO: OTIMIZAR QUERY
         User existingUser = userRepository.find("username", req.getUsername()).firstResult();
         Company existingCompany = companyRepository.find("id", req.getCompany_id()).firstResult();
         if (existingUser != null || existingCompany != null)
             throw new ResourceConflictException("Usuario ou empresa ja existe");
 
-        //TODO: OTIMIZAR QUERY
-        // DB - QUERY
         User user_transc = new User().fill_User(req);
-        userRepository.persist(user_transc);
+        UserCompany relation = new UserCompany(user_transc, existingCompany, req.getCompany_permission());
 
-        UserCompany relation = new UserCompany();
-        relation.user = user_transc;
-        relation.company = existingCompany;
-        relation.permission = req.getCompany_permission();
-        userCompanyRepository.persist(relation);
+        try {
+            userRepository.persist(user_transc);
+            userCompanyRepository.persist(relation);
+        } catch (PersistenceException e) {
+            if (e.getCause() instanceof ConstraintViolationException)
+                throw new ResourceConflictException("Usuario ja existe");
+            Log.error(e.getCause());
+            throw new InternalServerErrorException("Erro ao criar funcionario");
+        } catch (Exception e) { // Redundancia por seguranca
+            Log.error(e.getCause());
+            throw new InternalServerErrorException("Erro inesperado ao criar funcionario");
+        }
     }
 
     public void CriarEmpresa(Company req) throws ResourceConflictException {
-        Company existingCompany = companyRepository.find("name", req.company_name).firstResult();
-        if (existingCompany != null)
-            throw new ResourceConflictException("Empresa ja existe");
-
-        companyRepository.persist(req);
+        try {
+            companyRepository.persist(req);
+        } catch (PersistenceException e) {
+            if (e.getCause() instanceof ConstraintViolationException) {
+                throw new ResourceConflictException("Empresa ja existe");
+            }
+            Log.error(e.getCause());
+            throw new InternalServerErrorException("Erro ao criar empresa");
+        } catch (Exception e) { // Redundancia por seguranca
+            Log.error(e.getCause());
+            throw new InternalServerErrorException("Erro inesperado ao criar empresa");
+        }
     }
 
     public User CreateUserAndEmpresa(CreateUserAdminRequestDTO request) throws ResourceConflictException {
-        // Get do DTO
+
         newEmployee employeeRequest = request.getEmployeeRequest();
         Company companyRequest = request.getCompanyRequest();
 
-        // Empresa ja existe?
-        Company existingCompany = companyRepository.find("company_name", companyRequest.company_name).firstResult();
-        if (existingCompany != null)
-            throw new ResourceConflictException("Empresa ja existe");
+        try {
+            Company company = new Company(companyRequest.company_name);
+            companyRepository.persist(company);
+            companyRepository.flush();
 
-        // User ja existe? // CHECAR DEPOIS USERNAME E EMAIL
-        User existingUser  = userRepository.find("username = ?1 or email = ?2", employeeRequest.getUsername(), employeeRequest.getEmail()).firstResult();
+            User user = new User();
+            user.fill_User(employeeRequest);
+            userRepository.persist(user);
+            userRepository.flush(); // Necessario para obter o id do usuario
 
-        if (existingUser != null)
-            throw new ResourceConflictException(existingUser.username.equals(employeeRequest.getUsername()) ?
-                    "Nome de usuario ja existe" : "Email ja existe");
+            UserCompany userCompany = new UserCompany(new UserCompanyId(
+                    user.id, company.id),
+                    user, company, "A");
+            userCompanyRepository.persist(userCompany);
+            return user;
+        } catch (PersistenceException e) {
+            if (e.getCause() instanceof ConstraintViolationException) {
+                ConstraintViolationException cve = (ConstraintViolationException) e.getCause();
+                String constraintName = cve.getConstraintName();
 
-
-        // Cria empresa
-        Company company = new Company();
-        company.company_name = companyRequest.company_name;
-        companyRepository.persist(company);
-        companyRepository.flush();
-
-        // Cria user
-        User user = new User();
-        user.fill_User(employeeRequest);
-        userRepository.persist(user);
-        userRepository.flush();
-
-        // Adiciona userid, company_id e permission na tabela de conexoes
-        UserCompany userCompany = new UserCompany();
-        userCompany.id = new UserCompanyId(user.id, company.id);
-        userCompany.user = user;
-        userCompany.company = company;
-        userCompany.permission = "A"; // Admin permission
-        userCompanyRepository.persist(userCompany);
-
-        return user;
+                if (constraintName != null) {
+                    if (constraintName.contains("companies")) {
+                        throw new ResourceConflictException("Empresa já existe com este nome");
+                    } else if (constraintName.contains("users_username_key")) {
+                        throw new ResourceConflictException("Usuário já existe com este nome de usuário");
+                    } else if (constraintName.contains("users_email_key")) {
+                        throw new ResourceConflictException("Email já está em uso");
+                    }
+                }
+                throw new ResourceConflictException("Erro de validação: registro duplicado");
+            }
+            Log.error(e.getCause());
+            throw new InternalServerErrorException("Erro ao criar usuario e empresa");
+        } catch (Exception e) {
+            Log.error(e.getCause());
+            throw new InternalServerErrorException("Erro inesperado ao criar usuario e empresa");
+        }
     }
 }
