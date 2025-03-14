@@ -21,6 +21,19 @@ public class UserCompany implements Serializable
 
     public UserCompany() {}
 
+    public UserCompany(User user, Company company, String permission) {
+        this.user = user;
+        this.company = company;
+        this.permission = permission;
+    }
+
+    public UserCompany(UserCompanyId id, User user, Company company, String permission) {
+        this.id = id;
+        this.user = user;
+        this.company = company;
+        this.permission = permission;
+    }
+
     @JsonCreator
     public UserCompany(@JsonProperty("user_id") Long user_id, @JsonProperty("companyId") Long company_Id) {
         this.userId = user_id;
