@@ -25,18 +25,19 @@ public class UserService {
     private final UserRepository userRepository;
 
     @Inject
-    private JwtUtils jwtUtil;
+    JwtUtils jwtUtil;
 
     @Inject
-    private RedisService redisService;
+    RedisService redisService;
 
     @Inject
-    private AuthService authService;
+    AuthService authService;
 
     @Inject
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
+
 
     public void criarUser(User user) throws ResourceConflictException
     {
@@ -54,6 +55,7 @@ public class UserService {
         }
     }
 
+
     public User getUserById(Long id) throws NotFoundException
     {
         User user = userRepository.findById(id);
@@ -62,6 +64,8 @@ public class UserService {
 
         return user;
     }
+
+
     //TODO: LIMPAR CODIGO e Deixar mais seguro
     public Login2FrontDTO login(User user, String ClientIp, String userAgent) throws NotFoundException {
 
@@ -84,25 +88,24 @@ public class UserService {
                 throw new InternalServerErrorException("Erro ao salvar token no Redis");
 
             List<RedisCompanies> companies = foundUser.userCompanies.stream()
-                    .map(uc -> new RedisCompanies(new RedisCompanies.Id(uc.id.getUserId(),
+                                        .map(uc -> new RedisCompanies(
+                                                                new RedisCompanies.Id(uc.id.getUserId(),
                                                                 uc.id.getCompanyId()),
                                                                 uc.permission,
                                                                 uc.company.company_name))
                                                                 .toList();
-
-
-
             return new Login2FrontDTO(token, companies);
         }
         return null;
     }
 
+
     public Void logout(String token)
     {
-        if (token != null && token.length() > 7)
-            token = token.substring(7);
-        else
+        if (token == null || token.length() < 7)
             throw new BadRequestException("Token vazio");
+
+        token = token.substring(7);
 
         // REFATORAR PARA MAIS SAFE
         redisService.deleteToken(token);
